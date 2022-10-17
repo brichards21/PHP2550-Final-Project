@@ -1,0 +1,128 @@
+---
+title: "Data Exploration PHP2610 Project"
+author: "Breanna Richards"
+date: "2022-10-11"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(readr)
+library(janitor)
+
+```
+
+
+## Data Exploration 
+
+The primary data source that we're using for this study is the National Center for Biotechnology Information's (NCBI) Pathogen database. This database includes information about sequenced bacterial pathogens that originate from a food source. It records isolates with source and genetic information. Recall that our study aims to assess if we can predict future isolates' performance against antibiotics. More specifically, can we learn from past isolates to develop a system to recommend antibiotics to new isolates?
+
+The focus of the study started with the Salmonella enterica species. This was partially due to the fact that Salmonella is one of the most common germs that causes foodborne illness in the United States. Due to the nature of the NCBI data, the column containing information about drug resistance and susceptibility is more often then not missing. Since our research question is contingent upon information about how these isolates interact with antibiotics, we only consider cases with non-missing information for this particular variable. Thus, the records that we have available to us to assess our study question was sparse. This led to the decision to extend our analysis outside of Salmonella to also include isolates from the E.coli and Shigella species as well as the Campylobacter jejuni species not only to extend our records but to also possible assess the similarities and differences between the three species. 
+
+And so, filtering records from all three of the species, our final dataset contained 8,672 records for Salmonella, 3,880 records for E.coli and Shigella, and 3,497 records for Campylobacter jejuni for a total of 16,049 records. Let's start by examining our variables of interest.
+
+
+### Variables
+
+There are several variables in the NCBI dataset that we are interested in considering in our study. 
+
+
+\textbf{Organism group}
+
+This variable refers to the taxonomy group that the isolate belongs to. For the purpose of our study this is going to take on one of three values: Salmonella enterica, E.coli Shigella or Campylobacter jejuni.
+
+
+\textbf{Isolate}
+
+The isolate variable is unique for each record in our data and is how we identify individual organisms that have little genetic mixing. 
+
+
+\textbf{Strain}
+
+The strain variable gives the microbial strain name. It's used to distinguish a genetically distinct lineage separated from another strain by one or two mutations. Different strings of strains indicate different genetic variants or subtypes of microorganisms. 
+
+
+\textbf{Collection Date}
+
+Note to self: maybe only use one of these? leaning towards keeping collection date
+
+Collection date gives the date that the sample was collected.  
+
+
+\textbf{Location}
+
+The geographical origin of the sample.
+
+
+\textbf{Source type}
+
+Source type gives the general category that an isolate originates from. Some examples of values of source type are 'Human', 'Animal feed', 'Environmental' and 'Food'. 
+
+
+\textbf{Host and Host Disease}
+
+Host refers to the host species of the isolate. Examples include Homo sapiens, Bos taurus, pig, chicken, poultry, swine, and bovine. Host disease ties the isolate to a disease origin. Examples include gastroenteritis, salmonellosis, and diarrhea.
+
+
+\textbf{Serovar}
+(need to read more)
+The serovar gives the distinct variation within a species of bacteria. This column groups isolates based on their surface antigens, allowing the classification of isolates to the subspecies level.
+
+
+\textbf{Outbreak}
+
+The outbreak variable is a way to group isolates that originated due to the same breakout. It is a submitter given name for the occurrence of more cases of a disease than expected among a specific group of people or within a specific area over a period of time. 
+
+
+\textbf{Isolation Source and Isolation Type}
+
+Isolation source describes the physical, environmental and/or local geographical source of the biological sample from which the sampled was derived. Examples include boneless beef, turkey, river, creek water, and water filtration membrane.  Isolation type generalizes the isolation source into either clinical or environmental.
+
+\textbf{AST Phenotypes}
+
+- ast_phenotypes
+- snp_cluster
+- min_same
+- min_diff
+- bio_sample
+- assembly
+- amr_genotypes
+- computed_types
+
+
+```{r}
+
+names(isolates_df)
+
+salmonella_isolates <- read_csv("salmonella_isolates.csv")
+
+ecoli_isolates <- read_csv("ecoli_isolates.csv")
+
+campylobacter_isolates <- read_csv("campylobacter_isolates.csv")
+
+isolates_df <- rbind(salmonella_isolates, ecoli_isolates, campylobacter_isolates) %>%
+  clean_names() %>%
+  rename(organism_group = number_organism_group)
+
+isolates_df <- as.data.frame(isolates_df) %>%
+  select(-c(source_type))
+
+
+nrow(salmonella_isolates)
+nrow(ecoli_isolates)
+nrow(campylobacter_isolates)
+nrow(isolates_df)
+
+length(unique(isolates_df$serovar))
+table(isolates_df$source_type)
+
+```
+
+
+
+```{r}
+
+head(isolates_df)
+
+
+```
