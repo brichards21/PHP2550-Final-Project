@@ -94,11 +94,11 @@ Isolation source describes the physical, environmental and/or local geographical
 
 names(isolates_df)
 
-salmonella_isolates <- read_csv("salmonella_isolates.csv")
+salmonella_isolates <- read_csv("data/salmonella_isolates.csv")
 
-ecoli_isolates <- read_csv("ecoli_isolates.csv")
+ecoli_isolates <- read_csv("data/ecoli_isolates.csv")
 
-campylobacter_isolates <- read_csv("campylobacter_isolates.csv")
+campylobacter_isolates <- read_csv("data/campylobacter_isolates.csv")
 
 isolates_df <- rbind(salmonella_isolates, ecoli_isolates, campylobacter_isolates) %>%
   clean_names() %>%
