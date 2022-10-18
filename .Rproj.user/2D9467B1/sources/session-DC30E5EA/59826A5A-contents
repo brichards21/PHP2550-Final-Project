@@ -9,6 +9,9 @@ output: pdf_document
 knitr::opts_chunk$set(echo = TRUE)
 library(readr)
 library(janitor)
+library(tidyverse)
+library(knitr)
+library(kableExtra)
 
 ```
 
@@ -78,21 +81,31 @@ The outbreak variable is a way to group isolates that originated due to the same
 
 Isolation source describes the physical, environmental and/or local geographical source of the biological sample from which the sampled was derived. Examples include boneless beef, turkey, river, creek water, and water filtration membrane.  Isolation type generalizes the isolation source into either clinical or environmental.
 
-\textbf{AST Phenotypes}
 
-- ast_phenotypes
-- snp_cluster
-- min_same
-- min_diff
-- bio_sample
-- assembly
-- amr_genotypes
-- computed_types
+\textbf{AST Phenotypes and AMR Genotypes}
+
+The AST Phenotype column gives the antibiotic resistant phenotype of the isolate. This variable is key to our study and lists antibiotics that the isolate has demonstrated resistance, susceptibility, intermediate responsiveness, and/or dose-dependent susceptibility to. AMR genotypes gives the antimicrobial resistant genes found in the isolate.
+
+
+\textbf{Computed Types}
+
+This formula gives the antigen formula and serotype results from an in-silico experiment. The antigen formula gives the detected presence of specific viral antigen which indicates viral infection. The serotype groups isolates by their distinctive surface structures/antigens. 
+
+
+\textbf{SNP Cluster}
+
+A single nucleotide polymorphism (SNP) is a genomic variant at a single base postion in DNA. It represents the difference in a single DNA building block. A SNP cluster is a group of isolates whose genome assemblies are closely related, depending on the clustering methodology used. This column gives each isolate's pathogen SNP cluster accession.
+
+
+\textbf{Min-Same and Min Diff}
+
+Min-same is the minimum SNP distance to another isolate of the same isolation type (clinical or environmental). Min-diff is the minimum SNP distance to another isolate of a different isolation type. For example, the minimum SNP difference from an environmental isolate to a clinical isolate.
+
+
 
 
 ```{r}
 
-names(isolates_df)
 
 salmonella_isolates <- read_csv("data/salmonella_isolates.csv")
 
@@ -105,24 +118,123 @@ isolates_df <- rbind(salmonella_isolates, ecoli_isolates, campylobacter_isolates
   rename(organism_group = number_organism_group)
 
 isolates_df <- as.data.frame(isolates_df) %>%
-  select(-c(source_type))
+  select(-c(source_type, bio_sample, assembly, create_date, bio_sample))
 
+dim(isolates_df)
 
-nrow(salmonella_isolates)
-nrow(ecoli_isolates)
-nrow(campylobacter_isolates)
-nrow(isolates_df)
-
-length(unique(isolates_df$serovar))
-table(isolates_df$source_type)
 
 ```
 
+Let's start by assessing the missingess in our data. 
+
+\textbf{Missingness}
+
+```{r}
+
+missing_vals <- apply(isolates_df, 2, function(x) sum(is.na(x))/nrow(isolates_df))
+missing_vals_count <- apply(isolates_df, 2, function(x) sum(is.na(x)))
+
+missing_table <- cbind(as.data.frame(missing_vals[missing_vals > 0]), as.vector(missing_vals_count[missing_vals_count > 0]))
+
+colnames(missing_table) <- c("% Missing", "Count Missing")
+
+
+missing_table_k <- missing_table %>%
+  arrange(desc(`Count Missing`)) 
+
+```
+
+
+\textbf{Table 1} gives the variables with missingness and orders them from most missing to least missing. As a rule of thumb, we may want to omit the variables with over 90% missingness as they may not be too helpful or informative in our analysis. These variables are outbreak, host disease, and host. We recognize that our study will not be informed by information about an isolate's host disease, host species, and origin from an outbreak. 
+
+```{r tab_missing_data}
+
+
+kable(missing_table_k, caption = "Isolates Info from Most to Least Missing") %>%
+  kable_styling()
+
+```
 
 
 ```{r}
 
-head(isolates_df)
+
+isolates_df <- isolates_df %>%
+  select(-c(outbreak, host_disease, host))
 
 
 ```
+
+
+Even after removing the high-missingness variables, we note that all of the isolate records have at least one missing value for the 15 variables that we have left in our data. 
+
+```{r}
+
+
+missing_rows <- c()
+
+for (i in 1:nrow(isolates_df)) {
+row <- isolates_df[i, ]
+missing_rows <- c(missing_rows, any(is.na(row)))
+}
+
+sum(missing_rows)/nrow(isolates_df)
+
+
+
+```
+
+
+We'll start to get a good idea of our variable distributions, starting with \textbf{strain}. There are 15,348 unique strains represented in our dataset, meaning that 95.6% of the isolates in our data are unique. We may want to consider dropping this variable as a result.
+
+
+```{r}
+head(isolates_df)
+
+length(unique(isolates_df$strain))
+length(unique(isolates_df$strain))/nrow(isolates_df)
+
+```
+
+
+Next, we'll look at collection date to see what time periods our data spans. Since this variable differs in terms of the specificity of the dates, i.e., some values only record year while others record the exact month and day as well, we'll reduce this variable to only the year for all records to consistentcy purposes.
+
+
+```{r}
+isolates_df$collection_date <- substr(isolates_df$collection_date, 1, 4)
+```
+
+
+We observe the proportion of years represented within each organism group.
+
+```{r}
+
+prop_year_bact <- prop.table(table(isolates_df$organism_group, isolates_df$collection_date), 1) %>%
+  `*`(100) %>% round(2)
+
+prop_year_bact <- as.data.frame(prop_year_bact) %>%
+  rename(Organism = Var1) %>%
+  pivot_wider(names_from = Var2,
+              values_from = Freq) %>%
+  mutate(across(everything(), as.character))
+
+prop_year_bact[, -1] <- matrix(paste0(as.matrix(prop_year_bact[, -1]), '%'), nrow=3)
+
+
+prop_year_bact <- as.data.frame(prop_year_bact)
+
+```
+
+
+```{r}
+
+kable(prop_year_bact) %>%
+  kable_styling()
+
+```
+
+
+References
+
+
+[3] https://www.ncbi.nlm.nih.gov/pmc/articles/PMC2871933/

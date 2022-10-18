@@ -1,0 +1,391 @@
+---
+title: "PDA Assignment 2"
+author: "Breanna Richards"
+date: "2022-10-02"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(message=FALSE, warning=FALSE, error=FALSE, echo = FALSE)
+library(readr)
+library(ggplot2)
+library(tidyverse)
+library(janitor)
+library(knitr)
+library(kableExtra)
+library(tableone)
+
+```
+
+## 1. Scientific Questions
+\textbf{Read the paper 'Association of Highly Restrictive State Abortion Policies With Abortion Rates, 2000-2014'on Canvas (called 'abortion policies.pdf'). Then, respond to the following prompts.}
+
+
+\textbf{(a) Summarize the paper in 2-3 paragraphs using your own words.}
+
+The paper entitled "Association of Highly Restrictive State Abortion Policies With Abortion Rates, 2000-2014" sought to examine the effect of a highly restrictive legislative climate on county-level abortion rate (Brown et al., 2020). Although abortion is common in the US, patients sometimes face many barriers in order to obtain this particular facet of health care. Some legislative put into place hinder the accessibility of abortion care by regulating potentially costly facility requirements for abortion providers, just to name an example. Previous studies have also sought to examine the influence of restrictive policies on abortion rates across multiple states. The study highlighted in this paper aimed to expand the existing literature by 1) using multistate, longitudinal data to incorporate the effects of abortion legislation on abortion rates over time and 2) evaluate the association of an overall restrictive climate on abortion rates across the country. Researchers created a 'restrictiveness' variable based on 4 common categories of abortion: delays between counseling and abortion, parental involvement, parental involvement in a minor's abortion, TRAP laws, and gestational age cutoffs. In order to assess the change in abortion rates associated with a restrictive legislative climate, the researchers used a propensity score-weighted difference-in-difference design with a linear regression model, where abortion rate was defined as the total number of abortions obtained by residents of a county in a given year divided by the total female population. Analyses were run using Stata 14 (StataCorp). The control comparison was a less restrictive climate. Multiple models were formed in order to answer this question. In some, only states that became highly restrictive were included for the purpose of eliminating the confounding that would be present between states that became highly restrictive and states that were never highly restrictive. Other models included distance to an abortion clinic in miles as an adjustment. A secondary analysis was also run to assess whether distance to a clinic or facility for abortion care was correlated with a highly restrictive legislative climate. A significance level of p = 0.05 was adopted and all hypothesis tests were two-sided. All models employed propensity score weighting and state and year fixed effects. 
+
+The broader dataset was conjoined from deidentified data on linked country-of-residence abortion rates, data on legislation, and data on abortion facility locations spanning years 2001-2014 (the year 2000 was dropped from the study due to lack of sample size). A highly restrictive state was considered to be a state that had 3 of 4 types of high-restrictiveness (1. delays between counseling and abortion, 2. parental involvement, 3. parental involvement in a minor's abortion, TRAP laws, and 4. gestational age cutoffs). In contrast, those with less than 3 of these restrictions were considered to be less-restrictive. Propensity scores were derived from county-specific demographic data from the US Census Bureau.
+
+
+Policy introduction dates were staggered throughout the data, so the researchers found it necessary to test the parallel trends assumption, which is a premise used in difference-in-difference estimation that assumes that in the absence of treatment, the difference between the treatment and control groups is constant overtime, in a bit of an unconventional way. They regressed abortion rate on dummy variables for the years before and after the implementation of highly restrictive legislation to assess whether the abortion rates in each county-year observation differed systematically from one another. Thus, this study was equipped to answer the question of whether or not the abortion rate differed significantly in the years surrounding adoption of highly restrictive legislation compared to other years.
+
+The study showed that highly restrictive legislative climates were significantly associated with an abortion rate decrease of 0.48 abortions per 1000 women (p-value = 0.03) compared with a less restrictive legislature. When only the 14-states that became highly restrictive were included in the model, we saw the same relationship between restrictive legislation and abortion rate, but this time with a decrease of 0.45 abortions per 1000 women (p-value = 0.02). Adjusting for distance to an abortion clinic brought the abortion rate decrease to 0.44 per 1000 women (p-value = 0.04). There was no statistically significant association found between policy climate and distance to a facility (p-value = 0.10). Overall, the study observed a clinically meaningful 17% decrease in the abortion rate. A strength of this study lies in the use of longitudinal data from a diverse set of states which takes into account changes over time as opposed to single-state data and studies.
+
+Limitations of the study include that some states did not provide usable data and thus could not be comprehensively included in the study. Another limitation is that this study was not generalizable for all individuals of reproductive age as the study only took into account women. The study is also restricted to perhaps an "outdated" time as data from recent years is not available so the effect of restrictive legislative may actually be different nowadays. Overall though, the study provides strong evidence that highly restrictive legislative is associated with lower abortion rates. 
+ 
+
+
+\textbf{(b) Write out the model that adjusts for distance in Table 3 and explain how you derived it. You may need to do some research into the methods used or make some assumptions based on what the authors write.}
+
+
+The model that adjusts for distance in Table 3, like all the models in the study used a propensity score-weighted difference-in-difference design with a linear regression model to estimate the association between a highly restrictive legislative climate and abortion rate, adjusting for distance to a facility.
+
+Propensity scores were derived from county-specific demographic data including the percentage of the population in each race and ethnicity category, median income, total female population, and percentage who voted for the Democratic candidate in the most recent presidential election.
+
+A difference-in-difference design is used to compare the changes in an outcome over time between a treatment population and a control population (O'Neill et al., 2016). It requires data on both pre and post intervention, which in this case would be pre- and post- implementation of the highly restrictive legislative climate. 
+
+Of note is that a difference-in-difference design is usually implemented as an interaction term between time and treatment group variables in a regression model.
+
+Additionally, all models included state and year fixed effects as well as standard errors that adjust for state-level clustering (meaning the dependency between states were adjusted for).
+
+Thus, with all of this information, it may be reasonable to assume the following in regards to the model:
+
+- Outcome (Y): Number of abortions per 1000 Women 
+
+- Covariates (X's): 
+
+  - Year (categorical, dummy variables), 
+  
+  - State (categorical, dummy variables), 
+  
+  - Highly Restrictive Legislative Climate (binary that indicates whether we are in the pre- or post- restrictive climate time-period),
+  
+  - Treatment (binary variable that indicates whether a county is experiencing the restrictive climate or not) 
+  
+  - Distance to a Facility (continuous)
+
+
+In the equation, I'll use the abbreviation HRC to mean highly-restrictive climate.
+
+
+$$Num. \:\: Abortions \:\:per \:\:1000 \:\:Women_{it} = \beta_{0_{state}} + \beta_1HRC + \beta_2Treatment + \beta_3HRC*Treatment +$$ 
+
+$$\beta_4Year + \beta_5State + \beta_6Distance\:to\:Facility + \epsilon_{it}$$ where our units are individual county-year observations (i for county, t for year). 
+
+
+Note that we have clustering for each state, so each state gets its own intercept in the equation to adjust for dependencies between counties that reside in the same state. Additionally, we have clustering within state of our error terms! And finally we note that in minimizing least squares, the observations are weighted by propensity scores. 
+
+
+
+\textbf{(c) How does this model relate to the overall research question? Evaluate this approach to answering the question in 2-3 paragraphs. Be sure to mention the limitations of the approach and assumptions made.}
+
+
+Recall that the overall research question is to assess the association between a state legislative climate that is highly restrictive toward abortion care and abortion rate. Difference-in-difference models are extremely effective when the value of an outcome of interest changes over time. These types of models are often used to estimate the effect of something happening, like an intervention. In our case, this intervention is the implementation of a highly restrictive legislative climate. This model allows us to compare the changes in our outcome over time between a population that experienced the effect of the intervention compared to a population that did not experience the effect of this intervention even after the intervention was imposed for the population that did experience it. 
+
+The data that researchers had available to them was quite dynamic. Firstly, they had longitudinal data, data where the outcome was assessed at multiple points in time both before and after the intervention of interest was implemented. Second, this data that they had was all observational. They couldn't assign counties to observe a highly-restrictive legislative climate or not, and it was all retrospective in the sense that it was data from years past, not very current data. What's tricky with observational data is there can be so many confounders and biases at play that make it hard to infer a causal effect. And so, it's practically impossible to be able to assume that the treatment and control counties "look" the same, as in that outside of the treatment effect, these counties all behave the same, thus, there are no confounders. I believe that the researchers chose a difference-in-difference study design because difference-in-difference designs rely on a less restrictive assumption that in the absence of treatment, there may be unobserved differences between the treatment and control groups, but these are the same over time. This assumption is also referred to as the Parallel Trend Assumption (Renson et al., 2022). Because the researchers want to target and evaluate a causal effect between a restrictive climate and abortion rates, this study design allows for no bias in the post-intervention time-period comparisons of outcome between the control and treatment groups. Thus, this allows the researchers to appropriately answer their question and attribute differences between the control and treatment to the adoption of a highly restrictive legislative climate itself. Additionally, with this study design, the researchers were able to adjust for covariates of interest like state, year, and distance to a facility. All variables were able to be included with no qualms because the study design is applied to a linear regression model which allows for the inclusion of variables of any type. There are more assumptions to be considered though. 
+
+The biggest assumption, which we've already touched on, is the parallel trends assumption which implies that in the absence of treatment, i.e. in the absence of the highly legislative climate, the differences observed between those who will experience the legislative climate at time of intervention and those who will not experience it at time of intervention is the same. This is a strong assumption to make, especially with the complexities of our data. The policy changes don't occur at a single time across all counties so testing this assumption was not as direct. In order to do this, the researchers regressed the abortion rate on dummy variables for years before and after the implementation of the restrictive legislative state to determine whether the abortion rate in each of these counties differed from the abortion rate in other county-year observations. I argue though that these counties may still differ systematically in other ways that could influence the outcome after time of intervention. For example, say that the abortion rate in two counties are the same before intervention but one county's state is next to a state that won't take on the highly restrictive legislative after the intervention is implemented, and the other county's state is next to a state that will already also have taken on the restrictive legislative at time that it is implemented in the county of interest. Once the intervention is implemented, the county next to a state (and even an extension, how close that county is to state border lines) without the strict legislative might have even lower abortion rates, because those members of that county are now just traveling to that less-restrictive legislative state/county nearby for their abortion care. This ties into the assumption that there is no spillover effect which assumes that interventions in one county won't affect another, which I think is unreasonable and a limitation of this study. Additionally, as time goes on, I believe there would be less and less counties in the control group because more and more counties would take on the legislative over time. The assumption is that the make-up of treatment and control groups over time will be stable, which I don't think is entirely reasonable to assume here either. The final assumption is that the intervention assignment is not related to the outcome which could be a bit of a strong statement. One county may observe another and choose whether or not to implement the strict legislature based on what's happening in a different county that did or did not already. 
+
+
+
+\textbf{(d) If you had access to the same data, how might you extend this analysis to address the points in the previous question (1-2 paragraphs).}
+
+If I had access to the same data, there are few things that I might consider in order to extend this analysis. For one, I would include a few more variables that I would like to adjust for. As I mentioned previously, I think there are a few other factors that may cloud the validity of the assumptions of a difference-in-difference approach. I might want to consider using distance to another highly legislative state at time of intervention as a covariate in the model, perhaps as an alternative to distance to a facility. Alternatively, there may have been something interesting to obtain from an interaction term being being in a highly legislative climate and distance to a facility, just as the researcher noted in their limitation section. I also would've liked to consider political affiliation of both the county and the state as a direct covariate in the model. I believe that political affiliation may have been considered in propensity score weighting, but I'd be interested in including it as a covariate. Another idea is the inclusion of a random slope for year in addition to the random intercept for state. I feel it may be reasonable to assume that the effect that year has on the outcome could vary, especially as more recent years see a more overall progressive climate in the U.S. 
+
+Moreover, I may want to consider deterministic imputation using regression as an alternative to propensity score weighting in order to address the missingness. We can use this method to impute the missing values on abortion rate for the states that did not report them during certain years. The process of deterministic imputation using regression involves replacing missing values for non-respondents with predictions from a regression model built using the observed covariates. I feel that we used a lot of information from county-specific demographic data from the US Census Bureau including percentage of population in each race and ethnicity group, median income, total female population, and percentage who voted for the Democratic candidate in the most recent presidential election, in order to derive propensity score. I suggest that we could use this information as covariates in deterministic regression to predict abortion rates. It may be reasonable to assume that counties and states that look similar in terms of their characteristics may have similar abortion rates. In this approach, we may also want to take into account distance to states with reported abortion rates for a given year as an additional covariate. To take it a step further, since the major drawback to deterministic regression imputation is that the error term, $\epsilon$ isn't used or taken into account, an alternative and similar method is \textbf{stochastic regression imputation} which adds a random error term to the predicted value (Gold et al., 2000). 
+
+My last idea, is since counties experience the event of interest at different time points, we may just want to use a linear mixed effect model to assess the effect of time and a fixed treatment group on abortion rates. We may want to assess our study at a time when we have a balance of counties experiencing the intervention/highly legislative climate and counties not experiencing the intervention/highly legislative climate. And we can observe those counties for a albeit shorter time period where counties do not switch statuses of being in the treatment or control group. I think minimizing and focusing our study to a shorter time period where we don't have these interventions happening multiple times for different counties can simplify and increase the interpretability of our results. We can do all this while still taking into account any dependencies that we would like to consider like those between states and years. 
+
+
+
+## 2. Missing Data
+The pain clinic data we saw in class has follow-up information on a subset of patients. If we were interested in analyzing the change in pain over time, it would be important to think about the missing data due to loss to follow-up.
+
+
+
+```{r}
+
+pain <- read_csv("pain.csv")
+
+```
+
+
+```{r}
+
+#head(pain)
+pain <- pain %>%
+  clean_names() %>%
+  rename(medicaid = medicaid_bin) %>% 
+  select(-c(174, 175, 178, 181:191))
+
+pain_cols <- names(pain)[c(2:75,90:163, 174:177)]
+pain[pain_cols] <- lapply(pain[pain_cols], factor)
+
+
+pain$medicaid[pain$medicaid==""] <- NA
+pain$medicaid <- as.factor(as.character(pain$medicaid))
+pain$pat_race[pain$pat_race==""] <- NA
+pain$pat_race <- as.factor(as.character(pain$pat_race))
+
+
+```
+
+
+
+\textbf{(a) First, describe the patterns of missing data observed in the data set overall.}
+
+
+\textbf{(b) Compare the baseline characteristics between those with and without follow-up information. Comment on your results and discuss whether you think the data is MCAR, MAR, or MNAR.}
+
+
+\textbf{(c) Suppose we wanted to fit a model to assess risk of having worse pain at follow-up. To address the missing information, we are considering either using inverse probability weighting or multiple imputation. Explain briefly the steps we would take in each case and discuss the benefits and drawbacks to each approach. Which would you apply in this case?}
+
+-----------
+
+Before we address the missingness in our data, we first want to understand what kind of information we have in our dataset so that we can relate our missingness to this information. A large cohort of patients completed body pain maps and a pain assessment and some of these patients completed follow-up pain assessments three months after their initial assessment (Alter et al., 2021). Each row in our data represents a new patient, and there are 138 different regions of the body that patients could report pain in at both baseline and follow-up. The data stores a 1 value for that specific patient if they report pain in that area, and a 0 otherwise. 
+
+Aside from indicating areas of pain, the patients demographic variables and other characteristics were reported on. These variables are age at contact, BMI, Charlson Comorbidity Index total score,  which is a score that allows for the quantification of the severity of medical comorbidities, a similar comorbidity binned score, the patient's sex, race, and whether or not Medicaid was paying for their treatment.
+
+Finally, we have the patient-reported pain assessment data. This information includes measures of pain intensity average, physical function, pain behavior, depression, anxiety, sleep disturbance, pain interference, mental health score, physical health score, their impression of the impact that the pain center had on them, and finally a score for their impression that their treatment had on them. Aside from impression that their treatment had on them (as it couldn't be measured before treatment was actually administered), all of this assessment data was taken both before and after follow-up.
+
+Now that we're well acquainted with the information that we have in our data, let's begin to assess the missingness. Firstly, I want to know what percentage of patients have any missing data at all - this includes  missing data in pain area identification, baseline characteristics and demographic variables, or follow-up. Checking to see if any value in any patient's row is NA, we came to see that 98.8% of patients had at least one missing value. In order to assess overall patterns of where this missingness may be coming from, let's take a look at all of the variables, broken down by initial body pain measurements and assessments, follow-up body pain measurements and assessments, and finally demographic characteristics. 
+
+\textbf{Initial Measurements and Assessments}
+
+
+```{r, include = FALSE}
+
+
+missing_rows <- c()
+
+for (i in 1:nrow(pain)) {
+row <- pain[i, ]
+missing_rows <- c(missing_rows, any(is.na(row)))
+}
+
+sum(missing_rows)/nrow(pain)
+
+
+```
+
+```{r}
+
+
+missing_vals <- apply(pain, 2, function(x) sum(is.na(x))/nrow(pain))
+missing_vals_count <- apply(pain, 2, function(x) sum(is.na(x)))
+
+missing_table <- cbind(as.data.frame(missing_vals[missing_vals > 0]), as.vector(missing_vals_count))
+
+colnames(missing_table) <- c("% Missing", "Count Missing")
+
+
+```
+
+
+
+
+```{r}
+
+
+demo <- c("age_at_contact", "bmi", "cci_total_score", "cci_bin",
+          "pat_sex", "pat_race", "medicaid")
+
+omit <- c("patient_num")
+
+# initial table
+initial_missing <- missing_table[-grep("follow", rownames(missing_table)), ]
+
+initial_missing <- initial_missing[!(rownames(initial_missing) %in% 
+                c(omit, demo, "impression_treatmentimpact")),]
+
+
+# follow-up table
+follow_up_missing <- rbind(missing_table[grep("follow", rownames(missing_table)), ],
+            missing_table[grep("impression_treatmentimpact", rownames(missing_table)), ])
+
+
+other <- missing_table[c(demo),]
+
+
+
+```
+
+
+Firstly, we found that all of the initial body pain variables, meaning the binary 0/1 variables for patients to mark whether or not they experienced pain there, only have 1 patient that did not respond at all. This is the same patient across all of the body pain areas. Everyone else has responded to where they experience pain. In terms of the assessment variables, we see more missingness.
+\textbf{Table 1} outlines the top 10 variables with missingness in the initial body pain measurements and assessment data ordered from variables with the most missing values to variables with the least missing values. We see that pain center impact and pain behavior are the two initial assessment values with the most missingness, with pain center impact taking on 86.3% missingness and pain behavior with 29.4% missingness. This is followed by mental score and physical score, both with about 13.6% of their observations missing. This begs the question of whether or not the same patients did not respond to the mental and physical score initial assessments. Upon further investigation, we found that those patients who did not respond to the initial mental score assessment were the same patients that also did not respond to the physical score assessment, so we see some relationship there already. The next variable with the highest amount of missingness was pain interference at about 0.7%. And finally, the depression, anxiety, and sleep disturbance scores all had missingness at ~0.4% Once again, it's reasonable to wonder if those that did not respond to the initial depression assessment were the same patients that did not respond to the initial anxiety assessment and the initial sleep disturbance assessment. Upon further investigation, we found that this was the case. So, similarly to the relationship between mental score and physical score missingness, depression scores, anxiety scores, and sleep disturbance scores are also correlated in their missingness. 
+
+
+Now, let's assess missingness at follow-up.
+
+```{r, include=FALSE}
+
+# check if those with missing values in mental score also have missing values in physical score
+pain[which(is.na(pain$gh_mental_score)), c("gh_mental_score",
+                                          "gh_physical_score")]
+
+# check if those with missing values in depression 
+# also have missing values in anxiety and sleep disturbance
+pain[which(is.na(pain$promis_depression)), c("promis_depression",
+                                          "promis_anxiety",
+                                      "promis_sleep_disturb_v1_0")]
+```
+
+
+```{r tab_pre_missing}
+
+
+
+
+```
+
+
+\textbf{Follow-up Measurements and Assessments}
+
+At follow-up, we observe large volumes of missingness in each of the variables. Just looking at the 138 areas of pain that patients can identity, we now see significant dropout with 67% of the patients not responding at this follow-up assessment. It looks like all of the patients that did not respond at one body pain area for follow-up, did not respond at any of the follow-up body pain areas or to any of the pain assessment questions. Aside from the body pain areas, we also see additional missingness in the variables for assessment like pain behavior and mental score. \textbf{Table 2} shows that at follow up, pain behavior is the variable that has the most missingness, with 89.8% missing responses. As this exceeds the 67% that dropped out of the study, we know that this is additional missingness, even from those that responded to body area pain identification at follow-up. Following pain behavior is the impression of treatment variable at 86.3% missing. Then, we have both mental score and physical score at 73.4% missing. Similar to what we saw at initial assessment, it seems that non-response in mental and physical scores is correlated as the same patients that didn't respond to one, didn't respond to the other. Following mental and physical follow-up scores, we have depression, anxiety, sleep disturbance, and pain interference scores all at 70% missingness. We see the same relationship here as a patient that didn't respond to one of the 4 assessments mentioned, also didn't respond to the other 3. It's interesting that at baseline, missingness in pain interference wasn't 1:1 correlated with missingness in depression, anxiety, and sleep disturbance, but at follow-up, it is. Finally, we have pain center impact at 68.5% missingness at follow-up. 
+So, in terms of patterns, we see that mental score and physical score assessment are grouped together in terms of whether they are missing or not at both baseline and follow-up, which may make sense as the paper indicates that the two may have been answered together (Alter et al., 2021), and depression, anxiety, and sleep disturbance are missing and non-missing together at initial assessment, and pain-interference joins the trio in their missingness patterns at follow-up.
+
+Finally, we'll look at missingness in demographic characteristics.
+
+```{r, include = FALSE}
+
+# check if those with missing values in mental score also have 
+# missing values in physical score (FOLLOW-UP)
+pain[which(is.na(pain$gh_mental_score_follow_up)), c("gh_mental_score_follow_up",
+                                          "gh_physical_score_follow_up")]
+
+# check if those with missing values in depression also have 
+# missing values in anxiety and sleep disturbance (FOLLOW-UP)
+pain[which(is.na(pain$promis_depression_follow_up)), c("promis_depression_follow_up",
+                                          "promis_anxiety_follow_up",
+                                      "promis_sleep_disturb_v1_0_follow_up",
+                                      "promis_pain_interference_follow_up")]
+```
+
+
+
+
+```{r tab_follow_missing}
+
+post_follow <- follow_up_missing %>%
+  arrange(desc(`Count Missing`)) %>%
+  head(10)
+
+kable(post_follow, caption = "Top 10 Followup Pain Info from Most to Least Missing") %>% 
+  kable_styling()
+
+```
+
+
+
+\textbf{Patient Demographics and Other Characteristics}
+
+Patient demographics and other characteristics suffer a lot less from this missingness problem as follow-up does. Within the variables for age at contact, comorbidity index score, comorbidity bin, and sex, there is only a missing response for one patient (\textbf{Table 3}). This patient with missing responses for these variables is the same patient with missing responses for the initial body pain map variables. Patient's BMI is the characteristic variable with the highest amount of missingness at 26%. This is followed by whether or not a patient is paying with Medicaid at 1.4% and finally, a patient's race at 0.7%.
+
+
+```{r tab_other}
+
+other_demo <- other %>%
+  arrange(desc(`Count Missing`)) %>%
+  head(10)
+
+kable(other_demo, caption = "Other Baseline Characteristics from Most to Least Missing") %>%
+  kable_styling()
+
+
+
+```
+
+
+When it comes to missingness, it's informative to have an idea of what kind of missingness mechanism we're dealing with - if these observations are missing completely at random (MCAR), missing at random (MAR), or missing not at random (MNAR). We'll try to assess this by comparing the baseline characteristics between those with and without follow-up information to see if they're systematically different from one another. By baseline characteristics, we mean that we're going to look at differences between their demographics and other characteristics as well as their initial pain assessment responses that don't have to do with specific body pain regions. We choose to define those without follow-up information as the 67% of patients that did not respond to indicating whether or not they had pain in the specific 138 regions of the body. Those \textit{with} follow-up information are patients who did respond to those questions.
+
+
+\textbf{Comparing Characteristics of Patients With and Without Follow-up}
+
+
+The table below compares the distribution of these variables of interest between those with and without follow-up information as well as tests whether or not these distributions are significantly different between the two groups of patients. From this table, we see that patients with missing follow-up (TRUE column) have \textbf{higher} pain intensity averages, pain behavior, depression, anxiety, sleep disturbance, pain interference, a higher proportion of males, are more likely to be Black or Asian (as compared to White or non-minority), and are more likely to be on Medicaid. On the other hand, patients with missing follow-up information also have \textbf{lower} physical function, physical score, age at contact, and BMI.
+
+
+
+```{r}
+# 
+
+table_cols <- names(pain)[c(76:85, 87:89,174:177)]
+
+pain$follow_up_missing <- is.na(pain$x101_follow_up)
+
+
+CreateTableOne(data=pain, strata=c("follow_up_missing"),
+               vars = table_cols)
+
+
+
+```
+
+
+
+
+Overall, it seems that compared to patients that weren't lost at follow-up, individuals lost at follow-up were more highly correlated with initial worst experiences with pain, mental and physical health, and were more often younger people, mostly males and/or members of racial minority populations. They are also individuals who were more likely to be on Medicaid. Tying this in to what we know about Medicaid, individuals who are eligible for such care are younger people (below the age of 26) of lower-income who may have disabilities or are/were in the foster care system for youth.
+
+Thus, when we think about missingness, let's explore the feasibility of our three options, starting with missing completely at random (MCAR). In this case, missing completely at random would say that patients without follow-up are just a random subset of all patients without any systematic differences. As we just saw, it seems that the probability of being missing is NOT the same for all cases and that the probability of being missing is actually related to the data in some ways, as we saw that some baseline characteristics of patients were significantly more or less represented in the group without follow-up compared to the group with follow-up. So, we'll rule out MCAR. 
+
+Next, MAR. Missing at random would say that the probability of being missing is the same only within groups defined by the observed data. It means that there might be systematic differences between the missing and observed patients at follow-up. This may be plausible as we saw that having certain values within the observed data made you more or less likely to be observed at follow-up.
+
+MNAR is the most difficult to assess because it says that the probability of being missing varies for reasons that are unknown and unrepresented in our dataset. We may be able to claim this if there's something we can think of that may attribute to why we're seeing differences in missingness that may not be represented in the data. The only other big variable that I thought should be accounted for is income, but I think that effect is correlated with some of the variables that are already represented, like Medicaid for example. Thus, I think the data is MAR.
+
+
+\textbf{Inverse Probability Weighting vs. Multiple Imputation}
+
+
+So, we have a lot of missingness, especially at follow-up. Suppose we wanted to fit a model to assess the risk of having worse pain at follow-up. To address the missing information problem, we can consider using either inverse probability weighting (IPW) or multiple imputation (MI). We should consider the benefits and drawbacks to each approach on our data to consider which method we should choose in the end.  
+
+Let's start with \textbf{Inverse Probability Weighting}.
+
+In missing data problems, Inverse Probability Weighting is a method that uses weights to rebalance the dataset so that it is representative of the whole population. In IPW, only complete cases are included in the analysis. This method assumes missing at random, which is suitable for our dataset if my assumption that our data is missing at random is correct. We also assume that the probability of everyone being observed is positive. The process begins by obtaining weights for each complete case in our data. We can use logistic regression to get these weights and assign to each complete individual, their probability of being sampled/observed. Next, depending on each case's probability of being observed, each case will represent a larger number of observations than just themselves. This is to account for subjects with missing data that cannot be included. Weights for subjects that are underrepresented will get inflated weights. Each case will represent 'the inverse of their probability of being sampled' number of cases. For example, if an individual has a probability 1/2 of being sampled, they will represent the reciprocal of that probability number of people, so 2 people in this case. 
+
+The drawbacks are if someone has a low probability of being observed/sampled, like 1/50 for example, that one individual will end up representing 50 people in the population. Representing too many people doesn't allow for the variance in response that may come with actual people that look similar to that person representing 50. Another drawback is we only use information from those with complete cases. So, if non-complete cases provide a lot of information, then we would be missing out on that with IPW.
+
+On the other hand, there are some benefits to IPW. IPW may be preferred if incomplete cases provide very little information that would be useful. IPW is also easier to explain and implement as compared to MI.
+
+Now, let's consider \textbf{Multiple Imputation}.
+
+This method also assumes MAR. In Multiple Imputation, missing data is replaced by data drawn from an imputation model. Briefly, the process is that we first generate a specified number of complete datasets, M, with the missing values replaced by imputed values. These values are sampled from their predictive distribution which is based on the observed data. This process accounts for uncertainty in predictions by imputing values determined by variability. Since we can never know the true value of missing data, the datasets that we get from this process every time will differ.
+
+Now with the multiple datasets, we can fit our model of interest to each of them, which in our case, would be the model that will help us to assess the risk of having worse-pain at follow-up. Our estimations can then be averaged together from each of the imputed datasets in order to get a final inference on our research question. This is valid because we're averaging over the distribution of missing data given what we observe.
+
+There are few drawbacks to this method, however. The biggest one is that this is only effective when the imputation model is correctly specified. If we don't have enough information to inform our model, these imputations will be highly prone to bias. In other words,
+if we have a large proportion of missingness in our data and thus need to impute for a large number of observations, this may lead to the introduction of a large amount of bias. We have a higher chance of misspecifying the imputation model because the distribution of our data is sparse.
+
+On the benefits side, multiple imputation is said to usually be more efficient than IPW. If the imputation model is specified correctly, multiple imputation should work well. Multiple imputation allows for flexible estimates and takes variance of imputed values into account.
+
+In the case of our research question and data, since we have such a large amount of missingness at follow-up, I don't think it would be wise to try to impute these missing values. We don't have enough information to fully and accurately inform our imputation distribution, so taking the complete cases with IPW, is more favorable to me as we only need to use what we observe. Recall from what we saw earlier when we were evaluating the missingness in our data. 67% of patients didn't respond at follow-up. This is a large chunk of participants, especially for non-response on the same variables [follow-up body pain]. And since we are interested in maintaining what happens before and after follow-up so we can assess if there is worse pain or not, our analysis can be very biased and incorrect if our guesses from imputation end up being way off from what we would've actually observed had those observations not been missing. Additionally, since we've concluded that our data is most likely missing at random, we can feel assured that IPW will be appropriate for dealing with the missingness in our data. IPW can create a weighted population where the covariate distributions between our patients are balanced, which is something that we realized we lacked within some characteristics. 
+
+Thus, we would do well to only fit this model on our complete cases and use weights to adjust for the missing cases, but also to take good note of this and recognize that we are more likely to fully observe certain values of our covariates, as we saw earlier when we were deeply exploring the missingness patterns.
+
+\newpage
+
+## References
+
+Brown, B. P., Hebert, L. E., Gilliam, M., & Kaestner, R. (2020). Association of highly restrictive state abortion policies with abortion rates, 2000-2014. JAMA Network Open, 3(11), e2024610-e2024610.
+
+
+O'Neill, S., Kreif, N., Grieve, R., Sutton, M., & Sekhon, J. S. (2016). Estimating causal effects: considering three alternatives to difference-in-differences estimation. Health services & outcomes research methodology, 16, 1–21. https://doi.org/10.1007/s10742-016-0146-8
+
+
+Renson, A., Hudgens, M., Keil, A., Zivich, P., & Aiello, A. (2022). Identifying and estimating effects of sustained interventions under parallel trends assumptions. arXiv preprint arXiv:2206.05788.
+
+
+Alter, B. J., Anderson, N. P., Gillman, A. G., Yin, Q., Jeong, J. H., & Wasan, A. D. (2021). Hierarchical clustering by patient-reported pain distribution alone identifies distinct chronic pain subgroups differing by pain intensity, quality, and clinical outcomes. PloS one, 16(8), e0254862.
+
+
+Gold, M. S., & Bentler, P. M. (2000). Treatments of missing data: A Monte Carlo comparison of RBHDI, iterative stochastic regression imputation, and expectation-maximization. Structural Equation Modeling, 7(3), 319-355.
+
+
+
+\newpage 
+
+
+## Appendix
+
+```{r ref.label=knitr::all_labels(), echo=TRUE, eval=FALSE}
+```
