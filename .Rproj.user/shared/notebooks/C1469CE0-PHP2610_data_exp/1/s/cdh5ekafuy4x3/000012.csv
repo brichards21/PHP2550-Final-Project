@@ -1,0 +1,4 @@
+"0",""
+"0",""
+"0","kable(missing_table_k, caption = ""Isolates Info from Most to Least Missing"") %>%"
+"0","  kable_styling()"

@@ -6,7 +6,7 @@ output: pdf_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(message=FALSE, warning=FALSE, error=FALSE, echo = FALSE)
 library(readr)
 library(janitor)
 library(tidyverse)
@@ -118,7 +118,8 @@ isolates_df <- rbind(salmonella_isolates, ecoli_isolates, campylobacter_isolates
   rename(organism_group = number_organism_group)
 
 isolates_df <- as.data.frame(isolates_df) %>%
-  select(-c(source_type, bio_sample, assembly, create_date, bio_sample))
+  select(-c(source_type, bio_sample, assembly, create_date, bio_sample,
+            isolate_identifiers))
 
 dim(isolates_df)
 
@@ -166,7 +167,7 @@ isolates_df <- isolates_df %>%
 ```
 
 
-Even after removing the high-missingness variables, we note that all of the isolate records have at least one missing value for the 15 variables that we have left in our data. 
+After removing the high-missingness variables, we note that 54.7% of the isolate records have at least one missing value for the 14 variables that we have left in our data. 
 
 ```{r}
 
@@ -178,7 +179,7 @@ row <- isolates_df[i, ]
 missing_rows <- c(missing_rows, any(is.na(row)))
 }
 
-sum(missing_rows)/nrow(isolates_df)
+#sum(missing_rows)/nrow(isolates_df)
 
 
 
@@ -197,7 +198,7 @@ length(unique(isolates_df$strain))/nrow(isolates_df)
 ```
 
 
-Next, we'll look at collection date to see what time periods our data spans. Since this variable differs in terms of the specificity of the dates, i.e., some values only record year while others record the exact month and day as well, we'll reduce this variable to only the year for all records to consistentcy purposes.
+Next, we'll look at \textbf{collection date} to see what time periods our data spans. Since this variable differs in terms of the specificity of the dates, i.e., some values only record year while others record the exact month and day as well, we'll reduce this variable to only the year for all records to consistentcy purposes.
 
 
 ```{r}
@@ -206,6 +207,8 @@ isolates_df$collection_date <- substr(isolates_df$collection_date, 1, 4)
 
 
 We observe the proportion of years represented within each organism group.
+
+
 
 ```{r}
 
@@ -228,11 +231,153 @@ prop_year_bact <- as.data.frame(prop_year_bact)
 
 ```{r}
 
-kable(prop_year_bact) %>%
+kable(prop_year_bact, caption = "Prop. of Year Represented Per Bacteria") %>%
   kable_styling()
 
 ```
 
+
+Interestingly, Salmonella is the only bacteria that retains isolate data for 2002-2008. Data starts to be retained for E.coli and Shigella in 2009 but shows the most records in 2017 and thereafter. Data collection for isolates for Campylobacter started in 2016 and retained records up to and including the year of 2020.
+
+(say more)
+
+Next, let's look at the distribution of serovar within each bacteria of interest. Upon further inspection, we see that we only have non-missing serovar information for Salmonella. There 150 distinct serovars in our Salmonella data. To reduce the number of groupings in simply, values will only be distinguished if they represent over 2% of the isolates. Remaining serovar categories will be grouped into an 'Other' classification. 
+
+
+```{r}
+
+
+serovar_salm <- isolates_df %>%
+  group_by(organism_group, serovar) %>%
+  summarise(n = n()) %>%
+  mutate(freq = n / sum(n)) %>%
+  filter(organism_group == "Salmonella enterica") %>%
+  arrange(desc(freq))
+
+serovar_over1 <- unique(serovar_salm[serovar_salm$freq > 0.02, ]$serovar)
+
+isolates_df <- isolates_df %>%
+  mutate(serovar_new = ifelse(serovar %in% serovar_over1, serovar,
+                              "Other"))
+  
+```
+
+
+
+
+```{r}
+
+final_serovar_tbl <- isolates_df[isolates_df$organism_group == "Salmonella enterica", ] %>%
+  group_by(serovar_new) %>%
+  summarise(n = n()) %>%
+  mutate(freq = n / sum(n)) %>%
+  arrange(desc(freq)) %>%
+  rename(Serovar = serovar_new,
+         Count = n,
+         Freq = freq)
+
+
+```
+
+
+With this new subclassified serovar column, we are left with 13 distinct groupings. 
+
+
+The AST phenotypes variable is currently one long string with all of the recorded antibiotics that each isolate is resistant, susceptible, intermediate in response, and susceptible-dose dependent to. We will separate and classify this variable into four new variables (one for each of the drug responses mentioned) and list the corresponding antibiotics for each category.
+
+```{r}
+
+
+AST_df <- isolates_df[, c("isolate", "ast_phenotypes")] %>%
+  mutate(susceptible = ifelse())
+
+reorg_AST_df <- data.frame(matrix(ncol = 4, nrow = 0))
+colnames(reorg_AST_df) <- c("resist", "suscept", "inter", "suscept_dose_dep")
+
+for (i in 1:nrow(AST_df)) {
+  
+  R_vec <- c() # resistant
+S_vec <- c() # susceptible
+I_vec <- c() # intermediate
+SDD_vec <- c() # susceptible-dose dependent
+
+
+  pheno <- AST_df[i, ]$ast_phenotypes
+  split_pheno <- str_split(pheno, ",")
+  for (j in 1:length(split_pheno[[1]]))
+  {
+    if(grepl("=R", split_pheno[[1]][j]))
+    {
+      R_vec <- c(R_vec, split_pheno[[1]][j])
+    } else if (grepl("=S", split_pheno[[1]][j])) {
+      S_vec <- c(S_vec, split_pheno[[1]][j])
+    }
+    else if (grepl("=I", split_pheno[[1]][j])){
+      I_vec <- c(I_vec, split_pheno[[1]][j])
+    } else {
+      SDD_vec <- c(SDD_vec, split_pheno[[1]][j])
+    }
+  
+  }
+  
+  R_vec <- substr(R_vec,1,nchar(R_vec)-2)
+  R_vec <- paste(R_vec, collapse = ", ")
+  
+  S_vec <- substr(S_vec,1,nchar(S_vec)-2)
+  S_vec <- paste(S_vec, collapse = ", ")
+  
+  I_vec <- substr(I_vec,1,nchar(I_vec)-2)
+  I_vec <- paste(I_vec, collapse = ", ")
+  
+  SDD_vec <- substr(SDD_vec,1,nchar(SDD_vec)-2)
+  SDD_vec <- paste(SDD_vec, collapse = ", ")
+  
+  
+  
+   reorg_AST_df <- rbind(reorg_AST_df, 
+                          data.frame("resist" = R_vec,
+                                     "suscept" = S_vec,
+                                     "inter" = I_vec,
+                                     "suscept_dose_dep" = SDD_vec))
+}
+
+
+reorg_AST_df
+```
+
+
+```{r}
+
+isolates_df <- cbind(isolates_df, reorg_AST_df) %>%
+  select(-ast_phenotypes)
+
+```
+
+
+
+```{r}
+t <- AST_df[1, ]$ast_phenotypes
+m <- str_split(t, ",")
+length(m[[1]])
+m[[1]][1]
+grepl("=R", m[[1]][1])
+```
+
+
+
+Subquestions:
+Are isolates within the same SNP cluster susceptible/resistant to the same antibiotics?
+Compute similarity scores between strings
+
+
+How does drug resistance and susceptibility change over time?
+
+
+
+
+
+
+\newpage 
 
 References
 

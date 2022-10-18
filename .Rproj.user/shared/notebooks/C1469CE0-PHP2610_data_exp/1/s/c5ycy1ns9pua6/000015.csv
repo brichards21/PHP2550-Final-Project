@@ -1,7 +1,49 @@
-"0","dim(isolates_df)
-"
+"0",""
+"0",""
+"0","salmonella_isolates <- read_csv(""data/salmonella_isolates.csv"")"
+"2","[1mRows: [22m[34m8672[39m [1mColumns: [22m[34m22[39m"
+"2","[36m──[39m [1mColumn specification[22m [36m──────────────────────────────────────────────────────────[39m
+[1mDelimiter:[22m "",""
+[31mchr[39m  (17): #Organism group, Strain, Collection date, Host disease, Host, Isola...
+[32mdbl[39m   (2): Min-same, Min-diff
+[33mlgl[39m   (2): Source type, Outbreak
+[34mdttm[39m  (1): Create date"
+"2","
+[36mℹ[39m Use `spec()` to retrieve the full column specification for this data.
+[36mℹ[39m Specify the column types or set `show_col_types = FALSE` to quiet this message."
+"0","ecoli_isolates <- read_csv(""data/ecoli_isolates.csv"")"
+"2","[1mRows: [22m[34m3880[39m [1mColumns: [22m[34m22[39m"
+"2","[36m──[39m [1mColumn specification[22m [36m──────────────────────────────────────────────────────────[39m
+[1mDelimiter:[22m "",""
+[31mchr[39m  (15): #Organism group, Strain, Collection date, Host disease, Host, Isola...
+[32mdbl[39m   (2): Min-same, Min-diff
+[33mlgl[39m   (4): Source type, Outbreak, Serovar, Computed types
+[34mdttm[39m  (1): Create date"
+"2","
+[36mℹ[39m Use `spec()` to retrieve the full column specification for this data.
+[36mℹ[39m Specify the column types or set `show_col_types = FALSE` to quiet this message."
+"0","campylobacter_isolates <- read_csv(""data/campylobacter_isolates.csv"")"
+"2","[1mRows: [22m[34m3497[39m [1mColumns: [22m[34m22[39m"
+"2","[36m──[39m [1mColumn specification[22m [36m──────────────────────────────────────────────────────────[39m
+[1mDelimiter:[22m "",""
+[31mchr[39m  (15): #Organism group, Strain, Collection date, Host disease, Host, Isola...
+[32mdbl[39m   (2): Min-same, Min-diff
+[33mlgl[39m   (4): Source type, Outbreak, Serovar, Computed types
+[34mdttm[39m  (1): Create date"
+"2","
+[36mℹ[39m Use `spec()` to retrieve the full column specification for this data.
+[36mℹ[39m Specify the column types or set `show_col_types = FALSE` to quiet this message."
+"0","isolates_df <- rbind(salmonella_isolates, ecoli_isolates, campylobacter_isolates) %>%"
+"0","  clean_names() %>%"
+"0","  rename(organism_group = number_organism_group)"
+"0",""
+"0","isolates_df <- as.data.frame(isolates_df) %>%"
+"0","  select(-c(source_type, bio_sample, assembly, create_date, bio_sample,"
+"0","            isolate_identifiers))"
+"0",""
+"0","dim(isolates_df)"
 "1","[1]"
 "1"," 16049"
-"1","    18"
+"1","    17"
 "1","
 "

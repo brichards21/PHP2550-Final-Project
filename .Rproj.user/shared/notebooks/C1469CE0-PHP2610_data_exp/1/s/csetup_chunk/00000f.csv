@@ -1,11 +1,7 @@
-"0","library(kableExtra)
-"
-"2","
-Attaching package: ‘kableExtra’
-
-"
-"2","The following object is masked from ‘package:dplyr’:
-
-    group_rows
-
-"
+"0","knitr::opts_chunk$set(message=FALSE, warning=FALSE, error=FALSE, echo = FALSE)"
+"0","library(readr)"
+"0","library(janitor)"
+"0","library(tidyverse)"
+"0","library(knitr)"
+"0","library(kableExtra)"
+"0",""
