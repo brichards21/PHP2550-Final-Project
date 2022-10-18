@@ -121,7 +121,6 @@ isolates_df <- as.data.frame(isolates_df) %>%
   select(-c(source_type, bio_sample, assembly, create_date, bio_sample,
             isolate_identifiers))
 
-dim(isolates_df)
 
 
 ```
@@ -190,7 +189,7 @@ We'll start to get a good idea of our variable distributions, starting with \tex
 
 
 ```{r}
-head(isolates_df)
+
 
 length(unique(isolates_df$strain))
 length(unique(isolates_df$strain))/nrow(isolates_df)
@@ -237,7 +236,7 @@ kable(prop_year_bact, caption = "Prop. of Year Represented Per Bacteria") %>%
 ```
 
 
-Interestingly, Salmonella is the only bacteria that retains isolate data for 2002-2008. Data starts to be retained for E.coli and Shigella in 2009 but shows the most records in 2017 and thereafter. Data collection for isolates for Campylobacter started in 2016 and retained records up to and including the year of 2020.
+Interestingly, Salmonella is the only bacteria that retains isolate data for 2002-2008 (\textbf{Table 2}). Data starts to be retained for E.coli and Shigella in 2009 but shows the most records in 2017 and thereafter. Data collection for isolates for Campylobacter started in 2016 and retained records up to and including the year of 2020.
 
 (say more)
 
@@ -288,8 +287,7 @@ The AST phenotypes variable is currently one long string with all of the recorde
 ```{r}
 
 
-AST_df <- isolates_df[, c("isolate", "ast_phenotypes")] %>%
-  mutate(susceptible = ifelse())
+AST_df <- isolates_df[, c("isolate", "ast_phenotypes")] 
 
 reorg_AST_df <- data.frame(matrix(ncol = 4, nrow = 0))
 colnames(reorg_AST_df) <- c("resist", "suscept", "inter", "suscept_dose_dep")
@@ -342,7 +340,7 @@ SDD_vec <- c() # susceptible-dose dependent
 }
 
 
-reorg_AST_df
+
 ```
 
 
@@ -354,14 +352,19 @@ isolates_df <- cbind(isolates_df, reorg_AST_df) %>%
 ```
 
 
+Next, we look at the locations represented in our data. We'll reduce the location variable in our data to just be the countries 
 
 ```{r}
-t <- AST_df[1, ]$ast_phenotypes
-m <- str_split(t, ",")
-length(m[[1]])
-m[[1]][1]
-grepl("=R", m[[1]][1])
+
+table(isolates_df$location)
+
+isolates_df<- isolates_df %>%
+  mutate(country = gsub(":.*$", "", location))
+
 ```
+
+
+
 
 
 

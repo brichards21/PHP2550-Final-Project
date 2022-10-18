@@ -1,6 +1,0 @@
-"0",""
-"0",""
-"0","isolates_df <- isolates_df %>%"
-"0","  select(-c(outbreak, host_disease, host))"
-"0",""
-"0",""
