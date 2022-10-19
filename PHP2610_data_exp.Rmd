@@ -12,6 +12,7 @@ library(janitor)
 library(tidyverse)
 library(knitr)
 library(kableExtra)
+library(RecordLinkage)
 
 ```
 
@@ -228,7 +229,7 @@ prop_year_bact <- as.data.frame(prop_year_bact)
 ```
 
 
-```{r}
+```{r tab2}
 
 kable(prop_year_bact, caption = "Prop. of Year Represented Per Bacteria") %>%
   kable_styling()
@@ -352,24 +353,187 @@ isolates_df <- cbind(isolates_df, reorg_AST_df) %>%
 ```
 
 
-Next, we look at the locations represented in our data. We'll reduce the location variable in our data to just be the countries 
+Next, we look at the \textbf{locations} represented in our data. We'll reduce the location variable in our data to just be the countries. The vast majority of the records were collected in the United States with 99% of the Salmonella records hailing from the U.S., 85% of the E.coli and Shigella records from the U.S., and 95% of the Campylobacter jejuni records hailing from the U.S. The Netherlands and Germany are the next most popular countries represented. There are a total of 25 distinct countries represented in our dataset. 
+
 
 ```{r}
 
-table(isolates_df$location)
 
 isolates_df<- isolates_df %>%
   mutate(country = gsub(":.*$", "", location))
+
+
+```
+
+
+```{r}
+
+
+isolates_df <- isolates_df %>%
+  mutate(isolation_source = tolower(isolation_source),
+         isolation_source_new = ifelse(grepl("pork", isolation_source) |
+                                         grepl("swine", isolation_source) |
+                                         grepl("hog", isolation_source) |
+                                         grepl("chops", isolation_source) |
+                                         grepl("salami", isolation_source),
+                                       "pork",
+                                       ifelse(grepl("chicken", isolation_source),
+                                              "chicken",
+                                              ifelse(grepl("beef", isolation_source) |
+                                                       grepl("GB", isolation_source) |
+                                                       grepl("heifer", isolation_source) |
+                                                       grepl("cattle", isolation_source),
+                                                     "beef",
+                                                     ifelse(grepl("turkey", isolation_source), "turkey", 
+                                                            ifelse(grepl("ox", isolation_source), "ox",
+                                                                   ifelse(grepl("dairy", isolation_source), "dairy",
+                                                                          ifelse(grepl("stool", isolation_source) |
+                                                                                   grepl("blood", isolation_source) |
+                                                                                   grepl("feces", isolation_source) |
+                                                                                   grepl("manure", isolation_source) |
+                                                                                   grepl("rect", isolation_source) | grepl("anus", isolation_source), "stool",
+                                                                                 ifelse(grepl("blood", isolation_source), "blood",
+                                                                                        ifelse(grepl("urine", isolation_source), "urine",
+                                                                                               ifelse(grepl("shrimp", isolation_source), "shrimp",
+                                                                                                      ifelse(grepl("salmon", isolation_source), "salmon",
+                                                                                                             ifelse(grepl("egg", isolation_source), "egg",
+                                                                                                                    ifelse(grepl("water", isolation_source) |
+                                                                                                                             grepl("drainage", isolation_source), "water",
+                                                                                                                           ifelse(is.na(isolation_source), NA, "other/unspecified")))))))))))))))
+
+
+
+# isolation_source
+# pork = string containing pork or swine or hogs or chops or salami
+# chicken = string containing chicken
+# beef = string containing beef or GB or heifer or cattle
+# turkey = string containing turkey 
+# ox = string containing steer or ox
+# dairy = string containing dairy
+# stool = string containing stool or fesces or manure or rect or anus
+# blood = string containing blood
+# urine = string containing urine 
+# shrimp = string containing shrimp 
+# salmon = string containing salmon 
+# egg = string containing egg
+# water = water or drainage
+
+# if not NA, other/underspecified 
+# NA = NA
 
 ```
 
 
 
+```{r}
+
+
+isolates_df <- isolates_df %>%
+  mutate(isolation_source_new = ifelse(isolation_source_new %in% c("egg", "salmon", "shrimp"),
+                                       "other/unspecified", isolation_source_new))
+
+```
+
+
+The \textbf{isolation source} variable originally hosted 180 unique values. Upon further inspection, we found that a lot of these distinctions were due to case sensitiveness as well as many variations of the same general source. For example, 'pork', 'pork chops', 'pork chop', and 'Pork'. To simply, we grouped the isolates into broader categories based on the content we observed in the isolation source variable. We ultimately reduced this variable to 9 distinct catgeories: pork, chicken, turkey, beef, stool, urine, water, other/unspecified, and NA (for missingness). 
+
+
+```{r}
+
+
+prop_source_bact <- prop.table(table(isolates_df$organism_group, isolates_df$isolation_source_new), 1) %>%
+  `*`(100) %>% round(2)
+
+
+prop_source_bact <- as.data.frame(prop_source_bact) %>%
+  rename(Organism = Var1) %>%
+  pivot_wider(names_from = Var2,
+              values_from = Freq) %>%
+  mutate(across(everything(), as.character))
+
+prop_source_bact[, -1] <- matrix(paste0(as.matrix(prop_source_bact[, -1]), '%'), nrow=3)
+
+
+prop_source_bact <- as.data.frame(prop_source_bact)
+           
+```
+
+The most common isolate source in our data is chicken for Campylobacter and Salmonella (\textbf{Table 3}).  For E.coli and Shigella, it's turkey, with chicken being the second most common. 
+
+
+```{r tab3}
+
+kable(prop_source_bact, caption = "Prop. of Sources Represented Per Bacteria") %>%
+  kable_styling()
+
+```
+
+In terms of \textbf{isolation type}, there are 1,405 clinical isolates and 14,644 environmental/other isolates. This brings us to ~91% non-clinical (environmental/other) isolates. There's a difference in the distribution of isolation type in the E.coli bacterium group compared to the other two bacteria (Table 4).
+
+
+```{r}
+
+
+prop_isol_type <- prop.table(table(isolates_df$organism_group , isolates_df$isolation_type), 1)
+
+
+prop_isol_type <- prop.table(table(isolates_df$organism_group, isolates_df$isolation_type), 1) %>%
+  `*`(100) %>% round(2)
+
+
+prop_isol_type <- as.data.frame(prop_isol_type) %>%
+  rename(Organism = Var1) %>%
+  pivot_wider(names_from = Var2,
+              values_from = Freq) %>%
+  mutate(across(everything(), as.character))
+
+prop_isol_type[, -1] <- matrix(paste0(as.matrix(prop_isol_type[, -1]), '%'), nrow=3)
+
+
+prop_isol_type <- as.data.frame(prop_isol_type)
 
 
 
-Subquestions:
-Are isolates within the same SNP cluster susceptible/resistant to the same antibiotics?
+```
+
+
+
+```{r tab4}
+
+
+kable(prop_isol_type, caption = "Prop. of Isolation Type Represented Per Bacteria") %>%
+  kable_styling()
+
+
+```
+
+There are 2,613 \textbf{SNP clusters} represented in our data, 811 clusters for Salmonella, 830 for E.coli and Shigella, and 974 for Campylobacter jejuni.
+
+```{r}
+
+head(isolates_df)
+
+isolates_df %>%
+  group_by(organism_group) %>%
+  summarise(clusts = length(unique(snp_cluster)))
+
+unique(isolates_df$amr_genotypes)[1:30]
+
+length(unique(isolates_df$amr_genotypes))
+
+```
+
+
+There are 3,085 unique sets of AMR genotypes represented in the data
+
+
+### Initial Subquestions:
+
+The first question that we want to consider is:
+1. Are isolates within the same SNP cluster susceptible/resistant to the same antibiotics?
+
+In order to 
+
 Compute similarity scores between strings
 
 
