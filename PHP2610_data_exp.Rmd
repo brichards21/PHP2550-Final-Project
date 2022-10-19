@@ -540,6 +540,8 @@ In order to assess this, we will compute the similarity scores between the drugs
 isolates_df <- isolates_df %>% mutate_all(na_if,"") %>%
   mutate(suscept = tolower(suscept),
          resist = tolower(resist),
+         inter = tolower(inter),
+         suscept_dose_dep = tolower(suscept_dose_dep)
          )
 
 
@@ -547,26 +549,48 @@ isolates_df <- isolates_df %>% mutate_all(na_if,"") %>%
 # average similarity with everything else in your cluster
 
 # get vector of everything else in your cluster
-mean_sim_func <- function(df, var) {
 
- 
+mean_sim_func <- function(string, clusters) {
+# string is variable 
+  sim <- c()
    
-   purrr::map_dbl(seq_along(1:nrow(df)), function(i) {
+   purrr::map_dbl(seq_along(string), function(i) {
+
+   
+  for (j in 1:length(clusters)) {
+   
+    if (clusters[j] == clusters[i] & i != j &
+        !is.na(clusters[j]) & !is.na(clusters[i]))
+   {
+    sim <- c(sim, stringdist::stringsim(string[i], string[j]))
+   }
+    
+  }
      
-     df2 <- df %>%
-     filter(snp_cluster == df[i,]$snp_cluster)
-   
-   string <- df2[, var]
-   
-    sim <- stringdist::stringsim(string[i], string[-i])
     mean(sim)
+    
   })
 }
    
+# NA value if no other isolate in cluster
 
-isolates_df[isolates_df$organism_group == "Campylobacter jejuni",] %>% 
-  mutate(dup = mean_sim_func(isolates_df[isolates_df$organism_group == "Campylobacter jejuni",], "suscept"))
 
+ 
+isolates_df %>%
+  mutate(suscept_sim = mean_sim_func(suscept, snp_cluster),
+         resist_sim = mean_sim_func(resist, snp_cluster),
+         inter_sim = mean_sim_func(inter, snp_cluster),
+         sdd_sim = mean_sim_func(suscept_dose_dep, snp_cluster)
+         )
+
+
+
+
+```
+
+
+
+```{r}
 #     
 #   for (j in 1:nrow(df)){
 #    if (!is.na(df[i,]$snp_cluster) & !is.na(df[j,]$snp_cluster) & df[i,]$snp_cluster == df[j,]$snp_cluster & i != j)
@@ -615,9 +639,14 @@ campy_similarity <- isolates_df[isolates_df$organism_group == "Campylobacter jej
 
 length(unique(campy_similarity$snp_cluster))
 
+sum(!is.na(campy_similarity$dup))
+
+length(unique(campy_similarity$snp_cluster))
+
+
 campy_similarity %>%
   group_by(snp_cluster) %>%
-  summarise(n())
+  summarise(n = n())
 
 ```
 
