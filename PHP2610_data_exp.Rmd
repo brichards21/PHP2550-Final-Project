@@ -13,6 +13,7 @@ library(tidyverse)
 library(knitr)
 library(kableExtra)
 library(RecordLinkage)
+library(stringdist)
 
 ```
 
@@ -532,9 +533,92 @@ There are 3,085 unique sets of AMR genotypes represented in the data
 The first question that we want to consider is:
 1. Are isolates within the same SNP cluster susceptible/resistant to the same antibiotics?
 
-In order to 
+In order to assess this, we will compute the similarity scores between the drugs that isolates within the same clusters have. To do this, we'll use the `levenshteinSim` function in the `RecordLinkage` package in R.
 
-Compute similarity scores between strings
+
+```{r}
+
+
+
+isolates_df <- isolates_df %>% mutate_all(na_if,"")
+
+
+# what I want is, if you have the same SNP cluster as me, compute score
+mean_sim_func <- function(string, clust_val) {
+ purrr::map_dbl(seq_along(string), function(i) {
+    if (clust_val[i] == clust_val[-i])
+  {
+    sim <- stringdist::stringsim(string[i], string[-i][!is.na(string[-i])])
+  }
+     mean(sim)
+   })
+
+}
+
+
+
+mean_sim_func <- function(df, var) {
+  sim <- c()
+  
+  df[, paste0(var, "_sim")] <- NA
+  
+for (i in 1:nrow(df)) {
+  for (j in 1:nrow(df)){
+   if (!is.na(df[i,]$snp_cluster) & !is.na(df[j,]$snp_cluster) & df[i,]$snp_cluster == df[j,]$snp_cluster & i != j)
+   {
+     sim <- c(sim, stringsim(df[i, var], df[j, var]))
+   }
+  }
+  
+ df[i, paste0(var, "_sim")] <- mean(sim)
+  
+}
+  
+  return(df)
+}
+
+campy_similarity <- isolates_df[isolates_df$organism_group == "Campylobacter jejuni",]
+
+campy_similarity  <- mean_sim_func(campy_similarity, "suscept")
+
+
+
+
+
+# must corroborate 
+
+
+
+salmonella_similarity <- isolates_df[isolates_df$organism_group == "Salmonella enterica",] %>%
+  mutate(suscept_sim = mean_sim_func(suscept),
+         resist_sim = mean_sim_func(resist),
+         inter_sim = mean_sim_func(inter),
+         sdd_sim = mean_sim_func(suscept_dose_dep)
+         )
+
+
+ecoli_similarity <- isolates_df[isolates_df$organism_group == "E.coli and Shigella",] %>%
+  mutate(suscept_sim = mean_sim_func(suscept),
+         resist_sim = mean_sim_func(resist),
+         inter_sim = mean_sim_func(inter),
+         sdd_sim = mean_sim_func(suscept_dose_dep))
+
+
+campy_similarity <- isolates_df[isolates_df$organism_group == "Campylobacter jejuni",] %>%
+  mutate(suscept_sim = ifelse(!is.na(suscept), mean_sim_func(suscept, snp_cluster), NA),
+         resist_sim = ifelse(!is.na(resist), mean_sim_func(resist, snp_cluster), NA),
+         inter_sim = ifelse(!is.na(inter), mean_sim_func(inter, snp_cluster), NA),
+         sdd_sim = ifelse(!is.na(suscept_dose_dep), mean_sim_func(suscept_dose_dep, snp_cluster), NA))
+
+#write_csv(salmonella_similarity, "data/salmonella_similarity.csv")
+#write_csv(ecoli_similarity, "data/ecoli_similarity.csv")
+#write_csv(campy_similarity, "data/campy_similarity.csv")
+
+
+
+```
+
+
 
 
 How does drug resistance and susceptibility change over time?
