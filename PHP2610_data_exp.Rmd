@@ -512,15 +512,12 @@ There are 2,613 \textbf{SNP clusters} represented in our data, 811 clusters for 
 
 ```{r}
 
-head(isolates_df)
 
 isolates_df %>%
   group_by(organism_group) %>%
   summarise(clusts = length(unique(snp_cluster)))
 
-unique(isolates_df$amr_genotypes)[1:30]
 
-length(unique(isolates_df$amr_genotypes))
 
 ```
 
@@ -540,42 +537,44 @@ In order to assess this, we will compute the similarity scores between the drugs
 
 
 
-isolates_df <- isolates_df %>% mutate_all(na_if,"")
+isolates_df <- isolates_df %>% mutate_all(na_if,"") %>%
+  mutate(suscept = tolower(suscept),
+         resist = tolower(resist),
+         )
 
 
 # what I want is, if you have the same SNP cluster as me, compute score
-mean_sim_func <- function(string, clust_val) {
- purrr::map_dbl(seq_along(string), function(i) {
-    if (clust_val[i] == clust_val[-i])
-  {
-    sim <- stringdist::stringsim(string[i], string[-i][!is.na(string[-i])])
-  }
-     mean(sim)
-   })
+# average similarity with everything else in your cluster
 
-}
-
-
-
+# get vector of everything else in your cluster
 mean_sim_func <- function(df, var) {
-  sim <- c()
-  
-  df[, paste0(var, "_sim")] <- NA
-  
-for (i in 1:nrow(df)) {
-  for (j in 1:nrow(df)){
-   if (!is.na(df[i,]$snp_cluster) & !is.na(df[j,]$snp_cluster) & df[i,]$snp_cluster == df[j,]$snp_cluster & i != j)
-   {
-     sim <- c(sim, stringsim(df[i, var], df[j, var]))
-   }
-  }
-  
- df[i, paste0(var, "_sim")] <- mean(sim)
-  
+
+ 
+   
+   purrr::map_dbl(seq_along(1:nrow(df)), function(i) {
+     
+     df2 <- df %>%
+     filter(snp_cluster == df[i,]$snp_cluster)
+   
+   string <- df2[, var]
+   
+    sim <- stringdist::stringsim(string[i], string[-i])
+    mean(sim)
+  })
 }
-  
-  return(df)
-}
+   
+
+isolates_df[isolates_df$organism_group == "Campylobacter jejuni",] %>% 
+  mutate(dup = mean_sim_func(isolates_df[isolates_df$organism_group == "Campylobacter jejuni",], "suscept"))
+
+#     
+#   for (j in 1:nrow(df)){
+#    if (!is.na(df[i,]$snp_cluster) & !is.na(df[j,]$snp_cluster) & df[i,]$snp_cluster == df[j,]$snp_cluster & i != j)
+#    {
+#      sim <- c(sim, stringsim(df[i, var], df[j, var]))
+#    }
+#   }
+
 
 campy_similarity <- isolates_df[isolates_df$organism_group == "Campylobacter jejuni",]
 
@@ -614,7 +613,11 @@ campy_similarity <- isolates_df[isolates_df$organism_group == "Campylobacter jej
 #write_csv(ecoli_similarity, "data/ecoli_similarity.csv")
 #write_csv(campy_similarity, "data/campy_similarity.csv")
 
+length(unique(campy_similarity$snp_cluster))
 
+campy_similarity %>%
+  group_by(snp_cluster) %>%
+  summarise(n())
 
 ```
 
