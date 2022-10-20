@@ -15,6 +15,7 @@ library(kableExtra)
 library(RecordLinkage)
 library(stringdist)
 
+
 ```
 
 
@@ -22,7 +23,7 @@ library(stringdist)
 
 The primary data source that we're using for this study is the National Center for Biotechnology Information's (NCBI) Pathogen database. This database includes information about sequenced bacterial pathogens that originate from a food source. It records isolates with source and genetic information. Recall that our study aims to assess if we can predict future isolates' performance against antibiotics. More specifically, can we learn from past isolates to develop a system to recommend antibiotics to new isolates?
 
-The focus of the study started with the Salmonella enterica species. This was partially due to the fact that Salmonella is one of the most common germs that causes foodborne illness in the United States. Due to the nature of the NCBI data, the column containing information about drug resistance and susceptibility is more often then not missing. Since our research question is contingent upon information about how these isolates interact with antibiotics, we only consider cases with non-missing information for this particular variable. Thus, the records that we have available to us to assess our study question was sparse. This led to the decision to extend our analysis outside of Salmonella to also include isolates from the E.coli and Shigella species as well as the Campylobacter jejuni species not only to extend our records but to also possible assess the similarities and differences between the three species. 
+The focus of the study started with the Salmonella enterica species. This was partially due to the fact that Salmonella is one of the most common germs that causes foodborne illness in the United States. Due to the nature of the NCBI data, the column containing information about drug resistance and susceptibility is more often then not missing. Since our research question is contingent upon information about how these isolates interact with antibiotics, we only consider cases with non-missing information for this particular variable. Thus, the records that we had available to us to assess our study question was sparse. This led to the decision to extend our analysis outside of Salmonella to also include isolates from the E.coli and Shigella species as well as the Campylobacter jejuni species not only to extend our records but to also possible assess the similarities and differences between the three species. 
 
 And so, filtering records from all three of the species, our final dataset contained 8,672 records for Salmonella, 3,880 records for E.coli and Shigella, and 3,497 records for Campylobacter jejuni for a total of 16,049 records. Let's start by examining our variables of interest.
 
@@ -49,8 +50,6 @@ The strain variable gives the microbial strain name. It's used to distinguish a 
 
 \textbf{Collection Date}
 
-Note to self: maybe only use one of these? leaning towards keeping collection date
-
 Collection date gives the date that the sample was collected.  
 
 
@@ -66,22 +65,22 @@ Source type gives the general category that an isolate originates from. Some exa
 
 \textbf{Host and Host Disease}
 
-Host refers to the host species of the isolate. Examples include Homo sapiens, Bos taurus, pig, chicken, poultry, swine, and bovine. Host disease ties the isolate to a disease origin. Examples include gastroenteritis, salmonellosis, and diarrhea.
+The 'Host' variable refers to the host species of the isolate. Examples include Homo sapiens, Bos taurus, pig, chicken, poultry, swine, and bovine. Host disease ties the isolate to a disease origin. Examples include gastroenteritis, salmonellosis, and diarrhea.
 
 
 \textbf{Serovar}
-(need to read more)
+
 The serovar gives the distinct variation within a species of bacteria. This column groups isolates based on their surface antigens, allowing the classification of isolates to the subspecies level.
 
 
 \textbf{Outbreak}
 
-The outbreak variable is a way to group isolates that originated due to the same breakout. It is a submitter given name for the occurrence of more cases of a disease than expected among a specific group of people or within a specific area over a period of time. 
+The outbreak variable is a way to group isolates that originated due to the same breakout. It is a submitter-given name for the occurrence of more cases of a disease than expected among a specific group of people or within a specific area over a period of time. 
 
 
 \textbf{Isolation Source and Isolation Type}
 
-Isolation source describes the physical, environmental and/or local geographical source of the biological sample from which the sampled was derived. Examples include boneless beef, turkey, river, creek water, and water filtration membrane.  Isolation type generalizes the isolation source into either clinical or environmental.
+Isolation source describes the physical, environmental and/or local geographical source of the biological sample from which the sampled was derived. Examples include boneless beef, turkey, river, creek water, and water filtration membrane. Isolation type generalizes the isolation source into either clinical or environmental.
 
 
 \textbf{AST Phenotypes and AMR Genotypes}
@@ -127,9 +126,10 @@ isolates_df <- as.data.frame(isolates_df) %>%
 
 ```
 
-Let's start by assessing the missingess in our data. 
+------------------
 
-\textbf{Missingness}
+We start by assessing the missingness in our data. 
+
 
 ```{r}
 
@@ -187,19 +187,19 @@ missing_rows <- c(missing_rows, any(is.na(row)))
 ```
 
 
-We'll start to get a good idea of our variable distributions, starting with \textbf{strain}. There are 15,348 unique strains represented in our dataset, meaning that 95.6% of the isolates in our data are unique. We may want to consider dropping this variable as a result.
+We advance by assessing the distributions of our variables, starting with \textbf{strain}. There are 15,348 unique strains represented in our dataset, meaning that 95.6% of the isolates in our data are unique. We may want to consider dropping this variable as a result as it will not be too informative to our research problem.
 
 
 ```{r}
 
 
-length(unique(isolates_df$strain))
-length(unique(isolates_df$strain))/nrow(isolates_df)
+#length(unique(isolates_df$strain))
+#length(unique(isolates_df$strain))/nrow(isolates_df)
 
 ```
 
 
-Next, we'll look at \textbf{collection date} to see what time periods our data spans. Since this variable differs in terms of the specificity of the dates, i.e., some values only record year while others record the exact month and day as well, we'll reduce this variable to only the year for all records to consistentcy purposes.
+Next, we looked at the \textbf{collection date} variable to examine the time periods that our data span. Since the raw values of this variable differ in terms of the specificity of the dates, i.e., some values only record year while others record the exact month and day as well, we'll reduce this variable to only the year for consistentcy purposes.
 
 
 ```{r}
@@ -213,7 +213,7 @@ We observe the proportion of years represented within each organism group.
 
 ```{r}
 
-prop_year_bact <- prop.table(table(isolates_df$organism_group, isolates_df$collection_date), 1) %>%
+prop_year_bact <- prop.table(table(isolates_df$collection_date, isolates_df$organism_group), 2) %>%
   `*`(100) %>% round(2)
 
 prop_year_bact <- as.data.frame(prop_year_bact) %>%
@@ -222,27 +222,38 @@ prop_year_bact <- as.data.frame(prop_year_bact) %>%
               values_from = Freq) %>%
   mutate(across(everything(), as.character))
 
-prop_year_bact[, -1] <- matrix(paste0(as.matrix(prop_year_bact[, -1]), '%'), nrow=3)
+colnames(prop_year_bact) <- c("Year", colnames(prop_year_bact)[-1])
+
+prop_year_bact[, -1] <- matrix(paste0(as.matrix(prop_year_bact[, -1]), '%'), ncol=3)
 
 
 prop_year_bact <- as.data.frame(prop_year_bact)
+
 
 ```
 
 
 ```{r tab2}
 
-kable(prop_year_bact, caption = "Prop. of Year Represented Per Bacteria") %>%
+kable(prop_year_bact, caption = "Prop. of Years Represented Per Bacteria") %>%
   kable_styling()
 
 ```
 
 
-Interestingly, Salmonella is the only bacteria that retains isolate data for 2002-2008 (\textbf{Table 2}). Data starts to be retained for E.coli and Shigella in 2009 but shows the most records in 2017 and thereafter. Data collection for isolates for Campylobacter started in 2016 and retained records up to and including the year of 2020.
+Interestingly, Salmonella is the only bacteria that retains isolate data for 2002-2008 (\textbf{Table 2}). Data starts to be retained for E.coli and Shigella in 2009 but shows the most records in 2017 and thereafter. Data collection for isolates for Campylobacter started in 2016 and retained records up to and including the year of 2020. As we advance in this project, we'll use this variable to understands trends in our data overtime, more specifically as it pertains to changes in drug resistance and susceptibility.
 
-(say more)
+```{r}
 
-Next, let's look at the distribution of serovar within each bacteria of interest. Upon further inspection, we see that we only have non-missing serovar information for Salmonella. There 150 distinct serovars in our Salmonella data. To reduce the number of groupings in simply, values will only be distinguished if they represent over 2% of the isolates. Remaining serovar categories will be grouped into an 'Other' classification. 
+isolates_df <- isolates_df %>%
+  mutate(collection_date = as.numeric(collection_date))
+
+```
+
+
+
+
+Next, let's look at the distribution of \textbf{serovar} within each bacteria of interest. Upon further inspection, we see that we only have non-missing serovar information for Salmonella. There are 150 distinct serovars in our Salmonella data. To reduce the number of groupings and simplify, values will only be distinguished as their own group if they represent over 2% of the isolates in the Salmonella data. Remaining serovar categories will be grouped into an 'Other' classification. 
 
 
 ```{r}
@@ -281,10 +292,14 @@ final_serovar_tbl <- isolates_df[isolates_df$organism_group == "Salmonella enter
 ```
 
 
-With this new subclassified serovar column, we are left with 13 distinct groupings. 
+With this new subclassified serovar column, we are left with 13 distinct groupings. Aside from the 'Other' Classification group, Kentucky (~14%), Heidelberg (8%), and Typhimurium var. 5- (7%) are the most common serovar groupings. 
 
 
-The AST phenotypes variable is currently one long string with all of the recorded antibiotics that each isolate is resistant, susceptible, intermediate in response, and susceptible-dose dependent to. We will separate and classify this variable into four new variables (one for each of the drug responses mentioned) and list the corresponding antibiotics for each category.
+The \textbf{AST phenotypes} variable, in its rawest form, come to us as one long string with all of the recorded antibiotics that each isolate is resistant, susceptible, intermediate in response, and susceptible-dose dependent to. We separated and classified this variable into four new variables (one for each of the drug responses mentioned) and listed the corresponding antibiotics for each category. This process was done for ease of use when we eventually go on to build our model and want to separate antibiotics by isolates' responses to them. 
+
+
+
+
 
 ```{r}
 
@@ -350,6 +365,78 @@ SDD_vec <- c() # susceptible-dose dependent
 
 isolates_df <- cbind(isolates_df, reorg_AST_df) %>%
   select(-ast_phenotypes)
+
+```
+
+
+
+```{r}
+
+# drug resistance
+resist_salm <- isolates_df[isolates_df$organism_group == "Salmonella enterica", ]$resist
+resist_salm <- resist_salm[!is.na(resist_salm)]
+resist_salm <- unlist(strsplit(resist_salm, ","))
+
+resist_ecoli <- isolates_df[isolates_df$organism_group == "E.coli and Shigella", ]$resist
+resist_ecoli <- resist_ecoli[!is.na(resist_ecoli)]
+resist_ecoli <- unlist(strsplit(resist_ecoli, ","))
+
+resist_camp <- isolates_df[isolates_df$organism_group == "Campylobacter jejuni", ]$resist
+resist_camp <- resist_camp[!is.na(resist_camp)]
+resist_camp <- unlist(strsplit(resist_camp, ","))
+
+
+
+# drug susceptibility 
+sus_salm <- isolates_df[isolates_df$organism_group == "Salmonella enterica", ]$suscept
+sus_salm <- resist_salm[!is.na(sus_salm)]
+sus_salm <- unlist(strsplit(sus_salm, ","))
+
+
+sus_ecoli <- isolates_df[isolates_df$organism_group == "E.coli and Shigella", ]$suscept
+sus_ecoli <- sus_ecoli[!is.na(sus_ecoli)]
+sus_ecoli <- unlist(strsplit(sus_ecoli, ","))
+
+
+sus_camp <- isolates_df[isolates_df$organism_group == "Campylobacter jejuni", ]$suscept
+sus_camp <- sus_camp[!is.na(sus_camp)]
+sus_camp <- unlist(strsplit(sus_camp, ","))
+
+```
+
+
+In Salmonella, tetracycline (23%), streptomycin (17%), sulfisoxazole (13%), ampicillin (12%), and ceftriaxone (6%) are the top antibiotics that our observed isolates are resistant to.
+
+In E.coli, the top drugs that these isolates are resistant to are tetracycline (15%), ampicilin (12%), streptomycin (8%), sulfisoxazole (8%), and ceftriaxone (7%).
+
+In Campylobacter, tetracycline (48%), ciprofloxacin (21%), nalidixic acid (20%), clindamycin (3%), and erythromycin (2%) are the top drugs that isolates show resistance to. 
+
+In general, these bacteria share a lot of antibiotics that they've grown resistant to.
+
+
+```{r}
+
+#sort(prop.table(table(trimws(resist_salm))), decreasing = TRUE)
+#sort(prop.table(table(trimws(resist_ecoli))), decreasing = TRUE)
+#sort(prop.table(table(trimws(resist_camp))), decreasing = TRUE)
+
+
+```
+
+
+Regarding the discussion on drug susceptibility, Salmonella isolates saw the most susceptibility to tetracycline (23%), streptomycin (17%), sulfisoxazole (13%), and ampicillin (12%).
+
+In E.coli, isolates and strains were found to be most susceptible to meropenem (8%), ciprofloxacin (7%), nalidixic acid (7%), azithromycin (7%), and cefoxitin (7%).
+
+Finally, in Campylobacter, the drugs those isolates were most susceptible to were gentamicin (13%), erythromycin (13%), florfenicol (13%), azithromycin (12%), and clindamycin (12%).
+
+Interestingly, we see some overlap in certain bacteria being both susceptible and resistant to the same antibiotics. It'll be interesting to explore this more and see if examine potential shifts from susceptible to resistant status for these illnesses.
+
+```{r}
+
+#sort(prop.table(table(trimws(sus_salm))), decreasing = TRUE)
+#sort(prop.table(table(trimws(sus_ecoli))), decreasing = TRUE)
+#sort(prop.table(table(trimws(sus_camp))), decreasing = TRUE)
 
 ```
 
@@ -513,28 +600,63 @@ There are 2,613 \textbf{SNP clusters} represented in our data, 811 clusters for 
 ```{r}
 
 
-isolates_df %>%
-  group_by(organism_group) %>%
-  summarise(clusts = length(unique(snp_cluster)))
+# isolates_df %>%
+#   group_by(organism_group) %>%
+#   summarise(clusts = length(unique(snp_cluster)))
 
 
 
 ```
 
 
-There are 3,085 unique sets of AMR genotypes represented in the data
+There are 3,085 unique sets of \textbf{AMR genotypes} represented in the data, which we may be interested in dissecting and using to supplement our AST phenotype information.
 
+```{r}
+
+#length(unique(isolates_df$amr_genotypes))
+
+```
+
+Next, we looked at the \textbf{min-same} and \textbf{min-diff} variables.
+
+```{r figdist, fig.cap="Distributions of Min Same and Min Diff bh Bacteria"}
+
+dist_df <- isolates_df[, c("organism_group", "min_same", "min_diff")] %>%
+  pivot_longer(!organism_group, names_to = "type", values_to = "value")
+
+ggplot(dist_df, aes(x = value, col = type)) + 
+  geom_histogram(aes(y = ..density..,
+                                     fill = type),
+                                     alpha = 0.3) +
+    geom_density(size = 0.8) + 
+  facet_wrap(~ organism_group) +
+  labs(fill = "", col = "") +
+  theme_bw()
+
+  
+
+```
+
+
+To Do:
+
+
+## computed types
+
+
+
+-------------
 
 ### Initial Subquestions:
 
 The first question that we want to consider is:
 1. Are isolates within the same SNP cluster susceptible/resistant to the same antibiotics?
 
-In order to assess this, we will compute the similarity scores between the drugs that isolates within the same clusters have. To do this, we'll use the `levenshteinSim` function in the `RecordLinkage` package in R.
+In order to assess this, we will compute the similarity scores between the drugs that isolates within the same clusters have. To do this, we'll use the `stringsim` function in the `stringsim` package in R.
 
 
 ```{r}
-
+# Within-Cluster Similarity
 
 
 isolates_df <- isolates_df %>% mutate_all(na_if,"") %>%
@@ -544,11 +666,6 @@ isolates_df <- isolates_df %>% mutate_all(na_if,"") %>%
          suscept_dose_dep = tolower(suscept_dose_dep)
          )
 
-
-# what I want is, if you have the same SNP cluster as me, compute score
-# average similarity with everything else in your cluster
-
-# get vector of everything else in your cluster
 
 mean_sim_func <- function(string, clusters) {
 # string is variable 
@@ -576,87 +693,72 @@ mean_sim_func <- function(string, clusters) {
 
 
  
-isolates_df %>%
-  mutate(suscept_sim = mean_sim_func(suscept, snp_cluster),
-         resist_sim = mean_sim_func(resist, snp_cluster),
-         inter_sim = mean_sim_func(inter, snp_cluster),
-         sdd_sim = mean_sim_func(suscept_dose_dep, snp_cluster)
-         )
+# isolates_df <- isolates_df %>%
+#   mutate(suscept_sim = mean_sim_func(suscept, snp_cluster),
+#          resist_sim = mean_sim_func(resist, snp_cluster),
+#          inter_sim = mean_sim_func(inter, snp_cluster),
+#          sdd_sim = mean_sim_func(suscept_dose_dep, snp_cluster)
+#          )
 
 
+#write_csv(isolates_df, "data/isolates_df_sim_up.csv")
 
+isolates_df <- read_csv("data/isolates_df_sim_up.csv")
+isolates_df <- as.data.frame(isolates_df)
 
 ```
 
 
 
 ```{r}
-#     
-#   for (j in 1:nrow(df)){
-#    if (!is.na(df[i,]$snp_cluster) & !is.na(df[j,]$snp_cluster) & df[i,]$snp_cluster == df[j,]$snp_cluster & i != j)
-#    {
-#      sim <- c(sim, stringsim(df[i, var], df[j, var]))
-#    }
-#   }
+
+# Within Bacteria Similarity 
+
+mean_sim_bact_func <- function(string, org) {
+# string is variable 
+  sim <- c()
+   
+   purrr::map_dbl(seq_along(string), function(i) {
+
+   
+  for (j in 1:length(org)) {
+   
+    if (org[j] == org[i] & i != j &
+        !is.na(org[j]) & !is.na(org[i]))
+   {
+    sim <- c(sim, stringdist::stringsim(string[i], string[j]))
+   }
+    
+  }
+     
+    mean(sim)
+    
+  })
+}
 
 
-campy_similarity <- isolates_df[isolates_df$organism_group == "Campylobacter jejuni",]
+# isolates_df <- isolates_df %>%
+#   mutate(bact_suscept_sim = mean_sim_func(suscept, organism_group),
+#          bact_resist_sim = mean_sim_func(resist, organism_group),
+#          bact_inter_sim = mean_sim_func(inter, organism_group),
+#          bact_sdd_sim = mean_sim_func(suscept_dose_dep, organism_group)
+#          )
 
-campy_similarity  <- mean_sim_func(campy_similarity, "suscept")
-
-
-
-
-
-# must corroborate 
-
-
-
-salmonella_similarity <- isolates_df[isolates_df$organism_group == "Salmonella enterica",] %>%
-  mutate(suscept_sim = mean_sim_func(suscept),
-         resist_sim = mean_sim_func(resist),
-         inter_sim = mean_sim_func(inter),
-         sdd_sim = mean_sim_func(suscept_dose_dep)
-         )
-
-
-ecoli_similarity <- isolates_df[isolates_df$organism_group == "E.coli and Shigella",] %>%
-  mutate(suscept_sim = mean_sim_func(suscept),
-         resist_sim = mean_sim_func(resist),
-         inter_sim = mean_sim_func(inter),
-         sdd_sim = mean_sim_func(suscept_dose_dep))
-
-
-campy_similarity <- isolates_df[isolates_df$organism_group == "Campylobacter jejuni",] %>%
-  mutate(suscept_sim = ifelse(!is.na(suscept), mean_sim_func(suscept, snp_cluster), NA),
-         resist_sim = ifelse(!is.na(resist), mean_sim_func(resist, snp_cluster), NA),
-         inter_sim = ifelse(!is.na(inter), mean_sim_func(inter, snp_cluster), NA),
-         sdd_sim = ifelse(!is.na(suscept_dose_dep), mean_sim_func(suscept_dose_dep, snp_cluster), NA))
-
-#write_csv(salmonella_similarity, "data/salmonella_similarity.csv")
-#write_csv(ecoli_similarity, "data/ecoli_similarity.csv")
-#write_csv(campy_similarity, "data/campy_similarity.csv")
-
-length(unique(campy_similarity$snp_cluster))
-
-sum(!is.na(campy_similarity$dup))
-
-length(unique(campy_similarity$snp_cluster))
-
-
-campy_similarity %>%
-  group_by(snp_cluster) %>%
-  summarise(n = n())
 
 ```
 
 
 
 
+
+
+The second question that we want to consider is:
 How does drug resistance and susceptibility change over time?
 
 
+- dataset just with isolate, year, and column for each drug in drug resistance - 1 if resistant 0 otherwise
 
+- do the same for susceptible 
 
 
 
