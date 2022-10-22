@@ -668,22 +668,65 @@ prop_close <- prop.table(table(isolates_df$organism_group, isolates_df$num_close
 
 
 
-The last variable that we'll look at broadly is computed types. We start by separating computed types into the two pieces of information that the variable provides: antigen formula and serotype.
+The last variable that we'll look at broadly is computed types. We start by separating computed types into the two pieces of information that the variable provides: antigen formula and serotype. Perhaps the most important piece of information that we want to extract from this variable is the antigen formula because we already have serotype information from the serovar varialbe. We checked to see if this information serotype and serovar from the two different variables, was comparable or not and found that it was. So, from the computed types variable, we'll only reserve the antigen formula information. 
 
 
 ```{r}
 
-head(isolates_df)
+
+isolates_df <- isolates_df %>%
+separate(computed_types, c("antigen_formula", "serotype"), ",serotype=") %>%
+  mutate(antigen_formula = str_remove(antigen_formula, "antigen_formula="))
 
 ```
 
 
+This leaves us with 126 unique antigen formulas. We can reduce this further by looking at the distribution of antigen formulas represented. Upon further investigation, we found that the only isolates that don't have missingness for antigen formula are isolates that belong to Salmonella. Categories representing at least 2% of the Salmonella isolates will remain their own distinct columns while categories representing less than 2% will be grouped into an 'Other' category. 
 
-To Do:
+
+```{r}
+
+#length(unique(isolates_df$antigen_formula))
+
+count_antigen <- isolates_df[isolates_df$organism_group == "Salmonella enterica", ] %>%
+  group_by(antigen_formula) %>%
+  summarise(freq = n() / nrow(isolates_df)) %>%
+  arrange(desc(freq))
+
+antigen_over_2 <- count_antigen %>%
+  filter(freq >= 0.02)
+
+antigen_over_2 <- antigen_over_2$antigen_formula
+
+```
 
 
-## computed types
+```{r}
 
+isolates_df <- isolates_df %>%
+  mutate(antigen_formula_new = ifelse(antigen_formula %in% antigen_over_2, 
+                                      antigen_formula,
+                                      "Other"))
+  
+
+```
+
+
+```{r}
+
+# prop.table(table(isolates_df[isolates_df$organism_group == "Salmonella enterica",]$organism_group, 
+#                  isolates_df[isolates_df$organism_group == "Salmonella enterica",]$antigen_formula_new), 1)
+
+```
+
+Aside from the "other" category, '8:i:z6' (15%), '4:i:1,2' (13%), and '4:r:1,2' (8%), are the top three most antigen formulas represented in the Salmonella isolates that we have records on. 
+
+
+```{r}
+
+
+
+```
 
 
 -------------
@@ -691,9 +734,9 @@ To Do:
 ### Initial Subquestions:
 
 The first question that we want to consider is:
-1. Are isolates within the same SNP cluster susceptible/resistant to the same antibiotics?
+1. Are isolates within the same SNP cluster susceptible/resistant to the same antibiotics? How about isolates within the same isolation source?
 
-In order to assess this, we will compute the similarity scores between the drugs that isolates within the same clusters have. To do this, we'll use the `stringsim` function in the `stringsim` package in R.
+In order to assess this, we will compute the similarity scores between the drugs that isolates within the same clusters and isolation source have. To do this, we'll use the `stringsim` function in the `stringdist` package in R (van der Loo M, 2014). The `stringsim` function computes pairwise string similarities between elements of a vector. It returns values between 0 and 1 (inclusive), corresponding to perfect dissimilarity at a value of 0, and perfect similarity at a value of 1. We used the default method for distance calculation, optimal string alignment (restricted Damerau-Levenshtein distance). We'll assess the average similarity values for isolates within the same clusters. These values are broken down by drug resistance and drug susceptibility. 
 
 
 ```{r}
@@ -750,39 +793,84 @@ isolates_df <- as.data.frame(isolates_df)
 ```
 
 
+```{r}
+
+cluster_stats <- isolates_df %>%
+  group_by(snp_cluster, suscept_sim, resist_sim, inter_sim, sdd_sim) %>%
+  summarise(avg_suscept_sim = mean(suscept_sim),
+            avg_resist_sim = mean(resist_sim),
+            avg_inter_sim = mean(inter_sim),
+            avg_sdd_sim = mean(sdd_sim))
+
+
+summary_clust_sim <- as.data.frame(do.call(cbind, lapply(cluster_stats, summary))) %>%
+  select(-snp_cluster)
+
+summary_clust_sim <- summary_clust_sim[, 5:8]
+
+```
+
+
+```{r tab5}
+
+kable(summary_clust_sim,
+      caption = "Drug Behavior Similarity between Clusters",
+      col.names = c("Susceptible Sim.",
+                    "Resistant Sim.",
+                    "Intermediate Sim.",
+                    "Suscept. Dose Dependent Sim.")) %>%
+  kable_styling()
+
+```
+
+
+\textbf{Table 5} shows that on average, the drug behaviors of isolates within the same cluster tend to be fairly similar with mean and median values hovering between 0.75-0.86. Drug behaviors like susceptible dose dependent response and intermediate response have a lot more missingness compared the the data that we have on susceptibility and resistance and so with smaller sample sizes, if the data that we do have are similar and not very variable, these specific behaviors will have high similarity scores. We may consider removing the intermediate and/or susceptible dose dependent behaviors due to their high volumes of missingness. Despite high averages, there are some clusters that don't seem to have low similarity, based on our data. 
+
+We decided to group clusters into two categories, 'close' and 'distant'. Close clusters are defined as clusters with average min-diff or average min-same less than or equal to 10 SNPS. All other clusters are categorized as distant. We looked at the average similarity measures for close and distant clusters and found that in general, clusters that we considered 'close' had high similarity when it came to their isolates' drug responses (Table 6).
+
+
+```{r tab6}
+
+
+close_dist_clust <- isolates_df %>%
+  group_by(snp_cluster) %>%
+  summarise(avg_suscept_sim = mean(suscept_sim),
+            avg_resist_sim = mean(resist_sim),
+            avg_inter_sim = mean(inter_sim),
+            avg_sdd_sim = mean(sdd_sim),
+            avg_min_diff = mean(min_diff),
+            avg_min_same = mean(min_same)
+            ) %>%
+  mutate(close_clust = ifelse(avg_min_diff <= 10 | avg_min_same <= 10, "close", "distant")) %>%
+  group_by(close_clust) %>%
+  summarise(avg_sus = mean(avg_suscept_sim, na.rm = T),
+            avg_res = mean(avg_resist_sim, na.rm = T),
+            avg_int_sim = mean(avg_inter_sim, na.rm = T),
+            avg_sdd_sim = mean(avg_sdd_sim, na.rm = T),
+            n = n())
+
+close_dist_clust <- close_dist_clust %>%
+  filter(close_clust %in% c("close", "distant"))
+  
+
+
+
+
+
+```
+
+
+
+
 
 ```{r}
 
-# Within Bacteria Similarity 
-
-mean_sim_bact_func <- function(string, org) {
-# string is variable 
-  sim <- c()
-   
-   purrr::map_dbl(seq_along(string), function(i) {
-
-   
-  for (j in 1:length(org)) {
-   
-    if (org[j] == org[i] & i != j &
-        !is.na(org[j]) & !is.na(org[i]))
-   {
-    sim <- c(sim, stringdist::stringsim(string[i], string[j]))
-   }
-    
-  }
-     
-    mean(sim)
-    
-  })
-}
-
 
 # isolates_df <- isolates_df %>%
-#   mutate(bact_suscept_sim = mean_sim_func(suscept, organism_group),
-#          bact_resist_sim = mean_sim_func(resist, organism_group),
-#          bact_inter_sim = mean_sim_func(inter, organism_group),
-#          bact_sdd_sim = mean_sim_func(suscept_dose_dep, organism_group)
+#   mutate(iso_suscept_sim = mean_sim_func(suscept, isolation_source_new),
+#          iso_resist_sim = mean_sim_func(resist, isolation_source_new),
+#          iso_inter_sim = mean_sim_func(inter, isolation_source_new),
+#          iso_sdd_sim = mean_sim_func(suscept_dose_dep, isolation_source_new)
 #          )
 
 
@@ -809,3 +897,8 @@ References
 
 
 [3] https://www.ncbi.nlm.nih.gov/pmc/articles/PMC2871933/
+
+
+  van der Loo M (2014). “The stringdist package for approximate string
+  matching.” _The R Journal_, *6*, 111-122.
+  <https://CRAN.R-project.org/package=stringdist>.
