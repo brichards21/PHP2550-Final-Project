@@ -15,11 +15,11 @@ This project was conducted as a final project for the PHP2550 Fall2022 Practical
 
 - `Literature`: This folder contains all of the relevant literature reviewed for the sake of this study and project. 
 
-- `data_EDA.Rmd`: This file contains the code and text related to the full Exploratory Data Analysis report done for the study.
+- `data_EDA.Rmd` and `data_EDA.Rmd`: This file contains the code and text related to the full Exploratory Data Analysis report done for the study. The pdf version will have the code hidden.
 
-- `literature_review.Rmd` and `literature_review.pdf`: This file contains the isolated written Literature Review done for the study. The pdf version will have the code hidden. (TO BE ADDED)
+- `literature_review.Rmd` and `literature_review.pdf`: This file contains the isolated written Literature Review done for the study. The pdf version will have the code hidden. **(TO BE ADDED)**
 
-- `lit_review_EDA.Rmd` and `lit_review_EDA.pdf`: This file contains the Rmd file for the combined Literature Review and EDA report. The pdf version will have the code hidden. (TO BE ADDED)
+- `lit_review_EDA.Rmd` and `lit_review_EDA.pdf`: This file contains the Rmd file for the combined Literature Review and EDA report. The pdf version will have the code hidden. **(TO BE ADDED)**
 
 
 More folders and files to be added throughout the course of the project.
