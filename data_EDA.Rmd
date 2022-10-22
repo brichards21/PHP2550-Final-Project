@@ -108,11 +108,11 @@ Min-same is the minimum SNP distance to another isolate of the same isolation ty
 ```{r}
 
 
-salmonella_isolates <- read_csv("data/salmonella_isolates.csv")
+salmonella_isolates <- read_csv("data/raw_data/salmonella_isolates.csv")
 
-ecoli_isolates <- read_csv("data/ecoli_isolates.csv")
+ecoli_isolates <- read_csv("data/raw_data/ecoli_isolates.csv")
 
-campylobacter_isolates <- read_csv("data/campylobacter_isolates.csv")
+campylobacter_isolates <- read_csv("data/raw_data/campylobacter_isolates.csv")
 
 isolates_df <- rbind(salmonella_isolates, ecoli_isolates, campylobacter_isolates) %>%
   clean_names() %>%
