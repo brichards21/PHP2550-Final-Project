@@ -6,7 +6,7 @@ output: pdf_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(message=FALSE, warning=FALSE, error=FALSE, echo = FALSE)
+knitr::opts_chunk$set(message=FALSE, warning=FALSE, error=FALSE, echo = FALSE, fig.width = 6, fig.height = 4)
 library(readr)
 library(janitor)
 library(tidyverse)
@@ -21,7 +21,7 @@ library(stringdist)
 
 ## Data Exploration 
 
-The primary data source that we're using for this study is the National Center for Biotechnology Information's (NCBI) Pathogen database. This database includes information about sequenced bacterial pathogens that originate from a food source. It records isolates with source and genetic information. Recall that our study aims to assess if we can predict future isolates' performance against antibiotics. More specifically, can we learn from past isolates to develop a system to recommend antibiotics to new isolates?
+The primary data source that we're using for this study is the National Center for Biotechnology Information's (NCBI) Pathogen database. This database includes information about sequenced bacterial pathogens that originate from a food source. It records isolates with source and genetic information. Recall that our study aims to assess if we can predict future isolates' performance against antibiotics. More specifically, can we learn from past isolates to develop a system to recommend antibiotics to new isolates? What kind of patterns can we extract from our current data about behaviors of drug susceptibility and resistance?
 
 The focus of the study started with the Salmonella enterica species. This was partially due to the fact that Salmonella is one of the most common germs that causes foodborne illness in the United States. Due to the nature of the NCBI data, the column containing information about drug resistance and susceptibility is more often then not missing. Since our research question is contingent upon information about how these isolates interact with antibiotics, we only consider cases with non-missing information for this particular variable. Thus, the records that we had available to us to assess our study question was sparse. This led to the decision to extend our analysis outside of Salmonella to also include isolates from the E.coli and Shigella species as well as the Campylobacter jejuni species not only to extend our records but to also possible assess the similarities and differences between the three species. 
 
@@ -617,7 +617,8 @@ There are 3,085 unique sets of \textbf{AMR genotypes} represented in the data, w
 
 ```
 
-Next, we looked at the \textbf{min-same} and \textbf{min-diff} variables.
+Next, we looked at the \textbf{min-same} and \textbf{min-diff} variables. We observed that the distributions of minimum SNP distance to another isolate whether that isolate be of the same isolation type or different isolation type, are generally right-skewed (\textbf{Figure 1}). This may speak to the presence of outbreaks, isolates closely related to one another that may even have occurred near the same time. Our E.coli and Shigella records seem to be slightly distinct from the other two bacteria in its distributions as if presents a bit more variance in its min-same and min-diff values.
+
 
 ```{r figdist, fig.cap="Distributions of Min Same and Min Diff bh Bacteria"}
 
@@ -636,6 +637,46 @@ ggplot(dist_df, aes(x = value, col = type)) +
   
 
 ```
+
+We can create a new variable to indicate the number of isolates that are "close" to a given isolate. We'll define a closely related isolate as an isolate within 7 SNPs of another. If an isolate is within 7 SNPs of another clinical isolate and another environmental isolate, that counts as 2. Thus, only going off of the data that is available to us, this variable will only take on discrete values from 0-2.
+
+
+```{r}
+
+
+isolates_df <- isolates_df %>%
+  mutate(close_min_diff = ifelse(min_diff <= 7, TRUE, FALSE),
+         close_min_same = ifelse(min_same <= 7, TRUE, FALSE),
+         num_close = close_min_diff + close_min_same) %>%
+  select(-c(close_min_diff, close_min_same))
+
+
+```
+
+
+Briefly looking at the distribution of this new count variable, we observed that ~66% of isolates from E.coli and Shigella are not "close" to any other isolates while this proportion is around 25-26% for Campylobacter and Salmonella. Our Campylobacter jejuni isolates are the most close with ~44% having a min-diff and min-same value less than 7. This folowed by Salmonella with 35% of records having a min-diff and min-same value less than 7, and then E.coli with only 9% of records having a min-diff and min-same value less than 7. 
+
+```{r}
+
+
+prop_close <- prop.table(table(isolates_df$organism_group, isolates_df$num_close), 1)
+
+
+
+
+```
+
+
+
+The last variable that we'll look at broadly is computed types. We start by separating computed types into the two pieces of information that the variable provides: antigen formula and serotype.
+
+
+```{r}
+
+head(isolates_df)
+
+```
+
 
 
 To Do:
