@@ -295,7 +295,7 @@ final_serovar_tbl <- isolates_df[isolates_df$organism_group == "Salmonella enter
 With this new subclassified serovar column, we are left with 13 distinct groupings. Aside from the 'Other' Classification group, Kentucky (~14%), Heidelberg (8%), and Typhimurium var. 5- (7%) are the most common serovar groupings. 
 
 
-The \textbf{AST phenotypes} variable, in its rawest form, come to us as one long string with all of the recorded antibiotics that each isolate is resistant, susceptible, intermediate in response, and susceptible-dose dependent to. We separated and classified this variable into four new variables (one for each of the drug responses mentioned) and listed the corresponding antibiotics for each category. This process was done for ease of use when we eventually go on to build our model and want to separate antibiotics by isolates' responses to them. 
+The \textbf{AST phenotypes} variable, in its rawest form, come to us as one long string with all of the recorded antibiotics that each isolate is resistant, susceptible, intermediate in response, and susceptible-dose dependent to. We separated and classified this variable into two new variables, collapsing resistant and intermediate drug responses into 'resistant', and collapsing susceptible and susceptible-dose dependent responses into 'susceptible', and listed the corresponding antibiotics for each category. This process was done for ease of use when we eventually go on to build our model and want to separate antibiotics by isolates' responses to them. 
 
 
 
@@ -306,8 +306,8 @@ The \textbf{AST phenotypes} variable, in its rawest form, come to us as one long
 
 AST_df <- isolates_df[, c("isolate", "ast_phenotypes")] 
 
-reorg_AST_df <- data.frame(matrix(ncol = 4, nrow = 0))
-colnames(reorg_AST_df) <- c("resist", "suscept", "inter", "suscept_dose_dep")
+reorg_AST_df <- data.frame(matrix(ncol = 2, nrow = 0))
+colnames(reorg_AST_df) <- c("resist", "suscept")
 
 for (i in 1:nrow(AST_df)) {
   
@@ -350,10 +350,8 @@ SDD_vec <- c() # susceptible-dose dependent
   
   
    reorg_AST_df <- rbind(reorg_AST_df, 
-                          data.frame("resist" = R_vec,
-                                     "suscept" = S_vec,
-                                     "inter" = I_vec,
-                                     "suscept_dose_dep" = SDD_vec))
+                          data.frame("resist" = unique(c(R_vec, I_vec)),
+                                     "suscept" = unique(c(S_vec, SDD_vec))))
 }
 
 
@@ -405,13 +403,13 @@ sus_camp <- unlist(strsplit(sus_camp, ","))
 ```
 
 
-In Salmonella, tetracycline (23%), streptomycin (17%), sulfisoxazole (13%), ampicillin (12%), and ceftriaxone (6%) are the top antibiotics that our observed isolates are resistant to.
+In Salmonella, tetracycline (18%), streptomycin (12%), ampicillin (10%), sulfisoxazole (9%), and gentamicin (6%) are the top antibiotics that our observed isolates are resistant to.
 
-In E.coli, the top drugs that these isolates are resistant to are tetracycline (15%), ampicilin (12%), streptomycin (8%), sulfisoxazole (8%), and ceftriaxone (7%).
+In E.coli, the top drugs that these isolates are resistant to are tetracycline (32%), streptomycin (15%), ampicillin (9%), ciprofloxacin (7%), and nalidixic acid (6%).
 
-In Campylobacter, tetracycline (48%), ciprofloxacin (21%), nalidixic acid (20%), clindamycin (3%), and erythromycin (2%) are the top drugs that isolates show resistance to. 
+In Campylobacter, tetracycline (28%), sulfisoxazole (13%), ampicillin (11%), amoxicillin-clavulanic acid (8%), and ciprofloxacin (6%) are the top drugs that isolates show resistance to. 
 
-In general, these bacteria share a lot of antibiotics that they've grown resistant to.
+In general, these bacteria share some of antibiotics that they've grown most resistant to, but also exhibit a few differences.
 
 
 ```{r}
@@ -424,11 +422,11 @@ In general, these bacteria share a lot of antibiotics that they've grown resista
 ```
 
 
-Regarding the discussion on drug susceptibility, Salmonella isolates saw the most susceptibility to tetracycline (23%), streptomycin (17%), sulfisoxazole (13%), and ampicillin (12%).
+Regarding the discussion on drug susceptibility, Salmonella isolates saw the most susceptibility to tetracycline (18%), streptomycin (12%), and ampicillin (10%), and sulfisoxazole (9%).
 
-In E.coli, isolates and strains were found to be most susceptible to meropenem (8%), ciprofloxacin (7%), nalidixic acid (7%), azithromycin (7%), and cefoxitin (7%).
+In E.coli, isolates and strains were found to be most susceptible to gentamicin (9%), ciprofloxacin (9%), nalidixic acid (8%), azithromycin (7%), and trimethoprim-sulfamethoxazole (5%).
 
-Finally, in Campylobacter, the drugs those isolates were most susceptible to were gentamicin (13%), erythromycin (13%), florfenicol (13%), azithromycin (12%), and clindamycin (12%).
+Finally, in Campylobacter, the drugs those isolates were most susceptible to were gentamicin (10%), ciprofloxacin (9%), nalidixic acid (9%), azithromycin (8%), and trimethoprim-sulfamethoxazole (5%).
 
 Interestingly, we see some overlap in certain bacteria being both susceptible and resistant to the same antibiotics. It'll be interesting to explore this more and see if examine potential shifts from susceptible to resistant status for these illnesses.
 
@@ -620,7 +618,7 @@ There are 3,085 unique sets of \textbf{AMR genotypes} represented in the data, w
 Next, we looked at the \textbf{min-same} and \textbf{min-diff} variables. We observed that the distributions of minimum SNP distance to another isolate whether that isolate be of the same isolation type or different isolation type, are generally right-skewed (\textbf{Figure 1}). This may speak to the presence of outbreaks, isolates closely related to one another that may even have occurred near the same time. Our E.coli and Shigella records seem to be slightly distinct from the other two bacteria in its distributions as if presents a bit more variance in its min-same and min-diff values.
 
 
-```{r figdist, fig.cap="Distributions of Min Same and Min Diff bh Bacteria"}
+```{r figdist, fig.cap="Distributions of min-same and min-diff of isolates belonging to each bacteria"}
 
 dist_df <- isolates_df[, c("organism_group", "min_same", "min_diff")] %>%
   pivot_longer(!organism_group, names_to = "type", values_to = "value")
@@ -722,12 +720,6 @@ isolates_df <- isolates_df %>%
 Aside from the "other" category, '8:i:z6' (15%), '4:i:1,2' (13%), and '4:r:1,2' (8%), are the top three most antigen formulas represented in the Salmonella isolates that we have records on. 
 
 
-```{r}
-
-
-
-```
-
 
 -------------
 
@@ -745,9 +737,7 @@ In order to assess this, we will compute the similarity scores between the drugs
 
 isolates_df <- isolates_df %>% mutate_all(na_if,"") %>%
   mutate(suscept = tolower(suscept),
-         resist = tolower(resist),
-         inter = tolower(inter),
-         suscept_dose_dep = tolower(suscept_dose_dep)
+         resist = tolower(resist)
          )
 
 
@@ -777,15 +767,15 @@ mean_sim_func <- function(string, clusters) {
 
 
  
-# isolates_df <- isolates_df %>%
-#   mutate(suscept_sim = mean_sim_func(suscept, snp_cluster),
-#          resist_sim = mean_sim_func(resist, snp_cluster),
-#          inter_sim = mean_sim_func(inter, snp_cluster),
-#          sdd_sim = mean_sim_func(suscept_dose_dep, snp_cluster)
-#          )
+isolates_df <- isolates_df %>%
+  mutate(suscept_sim = mean_sim_func(suscept, snp_cluster),
+         resist_sim = mean_sim_func(resist, snp_cluster),
+         inter_sim = mean_sim_func(inter, snp_cluster),
+         sdd_sim = mean_sim_func(suscept_dose_dep, snp_cluster)
+         )
 
 
-#write_csv(isolates_df, "data/isolates_df_sim_up.csv")
+write_csv(isolates_df, "data/isolates_df_sim_up.csv")
 
 isolates_df <- read_csv("data/isolates_df_sim_up.csv")
 isolates_df <- as.data.frame(isolates_df)
@@ -826,10 +816,10 @@ kable(summary_clust_sim,
 
 \textbf{Table 5} shows that on average, the drug behaviors of isolates within the same cluster tend to be fairly similar with mean and median values hovering between 0.75-0.86. Drug behaviors like susceptible dose dependent response and intermediate response have a lot more missingness compared the the data that we have on susceptibility and resistance and so with smaller sample sizes, if the data that we do have are similar and not very variable, these specific behaviors will have high similarity scores. We may consider removing the intermediate and/or susceptible dose dependent behaviors due to their high volumes of missingness. Despite high averages, there are some clusters that don't seem to have low similarity, based on our data. 
 
-We decided to group clusters into two categories, 'close' and 'distant'. Close clusters are defined as clusters with average min-diff or average min-same less than or equal to 10 SNPS. All other clusters are categorized as distant. We looked at the average similarity measures for close and distant clusters and found that in general, clusters that we considered 'close' had high similarity when it came to their isolates' drug responses (Table 6).
+We decided to group clusters into two categories, 'close' and 'distant'. Close clusters are defined as clusters with average min-diff or average min-same less than or equal to 10 SNPS. All other clusters are categorized as distant. We looked at the average similarity measures for close and distant clusters and found that in general, clusters that we considered 'close' had high similarity when it came to their isolates' drug responses (\textbf{Table 6}).
 
 
-```{r tab6}
+```{r}
 
 
 close_dist_clust <- isolates_df %>%
@@ -855,6 +845,18 @@ close_dist_clust <- close_dist_clust %>%
 
 
 
+```
+
+```{r tab6}
+
+kable(close_dist_clust,
+      caption = "Average drug responses for close and distant clusters with closeness being defined as an average min-diff or min-same SNP distance of < 10 SNPS",
+      col.names = c("Cluster Type", "Average Susceptibility",
+                    "Average Resistance", 
+                    "Average Intermediate",
+                    "Average SDD",
+                    "Num Clusters")) %>%
+  kable_styling()
 
 
 ```
@@ -882,12 +884,126 @@ close_dist_clust <- close_dist_clust %>%
 
 
 The second question that we want to consider is:
-How does drug resistance and susceptibility change over time?
+2. Does drug resistance and susceptibility change over time?
+
+To answer this question, we'll just look at drug responses categorized as either susceptible or resistant instead of also considering intermediate and susceptible-dose dependent.
+
+```{r}
+#head(isolates_df)
+
+# resistance
+drug_res <- c(isolates_df$resist)
+drug_res <- drug_res[!is.na(drug_res)]
+
+drug_res <- unlist(strsplit(drug_res, split = ","))
+drug_res <- trimws(drug_res)
+drug_res <- unique(drug_res)
+
+# susceptibility
+drug_sus <- c(isolates_df$suscept)
+drug_sus <- drug_sus[!is.na(drug_sus)]
+
+drug_sus <- unlist(strsplit(drug_sus, split = ","))
+drug_sus <- trimws(drug_sus)
+drug_sus <- unique(drug_sus)
+
+```
+
+```{r}
 
 
-- dataset just with isolate, year, and column for each drug in drug resistance - 1 if resistant 0 otherwise
+```
 
-- do the same for susceptible 
+
+```{r}
+
+# resistance_df <- data.frame(matrix(nrow = nrow(isolates_df),
+#                                    ncol = length(drug_res)))
+# 
+# colnames(resistance_df) <- drug_res
+# 
+# resistance_df <- cbind(isolate = isolates_df$isolate, resistance_df)
+# 
+# for (i in 1:nrow(isolates_df)) {
+#   for (j in 1:length(drug_res)) {
+#   if (grepl(drug_res[j], isolates_df[i, "suscept"]))
+#   {
+#    resistance_df[i, drug_res[j]] <- 1
+#   }
+#     else {
+#       resistance_df[i, drug_res[j]] <- 0
+#     }
+#   }
+# }
+# 
+# resistance_df <- cbind(strain = isolates_df$strain, organism_group = isolates_df$organism_group,
+#                        collection_date = isolates_df$collection_date,
+#                        snp_cluster = isolates_df$snp_cluster, resistance_df)
+# 
+
+
+```
+
+
+```{r}
+
+#write_csv(resistance_df, "data/resistance_df.csv")
+
+resistance_df <- as.data.frame(read_csv("data/resistance_df.csv"))
+
+#colnames(resistance_df) <- gsub("\\...*","",colnames(resistance_df))
+```
+
+Since we've established that clusters tend to be very similar in terms of their drug responses 
+
+```{r}
+
+resistance_sum <- resistance_df %>%
+  group_by(snp_cluster, collection_date) %>%
+  summarise_if(is.numeric, funs(mean)) %>%
+  pivot_longer(!c(snp_cluster, collection_date), names_to = "drug",
+               values_to = "resistance")
+```
+
+
+
+```{r}
+set.seed(1)
+
+
+subset_clust <- resistance_sum %>%
+  group_by(snp_cluster, collection_date) %>%
+  summarise(n = n()) %>%
+  group_by(snp_cluster) %>%
+  summarise(n = n()) %>%
+  arrange(desc(n)) %>%
+  filter(n > 5, !is.na(snp_cluster)) 
+
+rand_10_clusts <- sample(unique(subset_clust$snp_cluster), 10)
+```
+
+
+```{r}
+
+ rand10_clusts_df <- resistance_sum[resistance_sum$snp_cluster %in% rand_10_clusts, ]
+
+ggplot(rand10_clusts_df[rand10_clusts_df$drug ==
+                        "tetracycline",], aes(x = collection_date, y = resistance,
+                           col = snp_cluster,
+                           group = snp_cluster)) +
+  geom_point() +
+  geom_line(size = 1) +
+  labs(col = "")
+
+
+
+```
+
+## Limitations
+
+
+
+## Conclusion
 
 
 
