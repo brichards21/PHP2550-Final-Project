@@ -314,8 +314,8 @@ for (i in 1:nrow(AST_df)) {
   
   R_vec <- c() # resistant
 S_vec <- c() # susceptible
-I_vec <- c() # intermediate
-SDD_vec <- c() # susceptible-dose dependent
+R_comb <- c() # resistant & intermediate
+S_comb <- c() # susceptible & susceptible-dose dependent
 
 
   pheno <- AST_df[i, ]$ast_phenotypes
@@ -325,13 +325,19 @@ SDD_vec <- c() # susceptible-dose dependent
     if(grepl("=R", split_pheno[[1]][j]))
     {
       R_vec <- c(R_vec, split_pheno[[1]][j])
-    } else if (grepl("=S", split_pheno[[1]][j])) {
+    } 
+    
+    if (grepl("=S", split_pheno[[1]][j])) {
       S_vec <- c(S_vec, split_pheno[[1]][j])
     }
-    else if (grepl("=I", split_pheno[[1]][j])){
-      I_vec <- c(I_vec, split_pheno[[1]][j])
-    } else {
-      SDD_vec <- c(SDD_vec, split_pheno[[1]][j])
+    
+    if (grepl("=R", split_pheno[[1]][j]) | grepl("=I", split_pheno[[1]][j])){
+      R_comb <- c(R_comb, split_pheno[[1]][j])
+    } 
+    
+    if (grepl("=S", split_pheno[[1]][j]) | grepl("=SDD", split_pheno[[1]][j])){
+      
+      S_comb <- c(S_comb, split_pheno[[1]][j])
     }
   
   }
@@ -342,21 +348,20 @@ SDD_vec <- c() # susceptible-dose dependent
   S_vec <- substr(S_vec,1,nchar(S_vec)-2)
   S_vec <- paste(S_vec, collapse = ", ")
   
-  I_vec <- substr(I_vec,1,nchar(I_vec)-2)
-  I_vec <- paste(I_vec, collapse = ", ")
+  R_comb <- substr(R_comb,1,nchar(R_comb)-2)
+  R_comb <- paste(R_comb, collapse = ", ")
   
-  SDD_vec <- substr(SDD_vec,1,nchar(SDD_vec)-2)
-  SDD_vec <- paste(SDD_vec, collapse = ", ")
+  S_comb <- substr(S_comb,1,nchar(S_comb)-2)
+  S_comb <- paste(S_comb, collapse = ", ")
   
   
   
    reorg_AST_df <- rbind(reorg_AST_df, 
-                          data.frame("resist_comb" = unique(c(R_vec, I_vec)),
-                                     "suscept_comb" = unique(c(S_vec, SDD_vec)),
+                          data.frame("resist_comb" = R_comb,
+                                     "suscept_comb" = S_comb,
                                      "resist" = R_vec,
                                      "suscept" = S_vec))
 }
-
 
 
 ```
@@ -374,43 +379,43 @@ isolates_df <- cbind(isolates_df, reorg_AST_df) %>%
 ```{r}
 
 # drug resistance
-resist_salm <- isolates_df[isolates_df$organism_group == "Salmonella enterica", ]$resist
+resist_salm <- isolates_df[isolates_df$organism_group == "Salmonella enterica", ]$resist_comb
 resist_salm <- resist_salm[!is.na(resist_salm)]
 resist_salm <- unlist(strsplit(resist_salm, ","))
 
-resist_ecoli <- isolates_df[isolates_df$organism_group == "E.coli and Shigella", ]$resist
+resist_ecoli <- isolates_df[isolates_df$organism_group == "E.coli and Shigella", ]$resist_comb
 resist_ecoli <- resist_ecoli[!is.na(resist_ecoli)]
 resist_ecoli <- unlist(strsplit(resist_ecoli, ","))
 
-resist_camp <- isolates_df[isolates_df$organism_group == "Campylobacter jejuni", ]$resist
+resist_camp <- isolates_df[isolates_df$organism_group == "Campylobacter jejuni", ]$resist_comb
 resist_camp <- resist_camp[!is.na(resist_camp)]
 resist_camp <- unlist(strsplit(resist_camp, ","))
 
 
 
 # drug susceptibility 
-sus_salm <- isolates_df[isolates_df$organism_group == "Salmonella enterica", ]$suscept
+sus_salm <- isolates_df[isolates_df$organism_group == "Salmonella enterica", ]$suscept_comb
 sus_salm <- resist_salm[!is.na(sus_salm)]
 sus_salm <- unlist(strsplit(sus_salm, ","))
 
 
-sus_ecoli <- isolates_df[isolates_df$organism_group == "E.coli and Shigella", ]$suscept
+sus_ecoli <- isolates_df[isolates_df$organism_group == "E.coli and Shigella", ]$suscept_comb
 sus_ecoli <- sus_ecoli[!is.na(sus_ecoli)]
 sus_ecoli <- unlist(strsplit(sus_ecoli, ","))
 
 
-sus_camp <- isolates_df[isolates_df$organism_group == "Campylobacter jejuni", ]$suscept
+sus_camp <- isolates_df[isolates_df$organism_group == "Campylobacter jejuni", ]$suscept_comb
 sus_camp <- sus_camp[!is.na(sus_camp)]
 sus_camp <- unlist(strsplit(sus_camp, ","))
 
 ```
 
 
-In Salmonella, tetracycline (18%), streptomycin (12%), ampicillin (10%), sulfisoxazole (9%), and gentamicin (6%) are the top antibiotics that our observed isolates are resistant to.
+In Salmonella, tetracycline (22%), streptomycin (16%), sulfisoxazole (12%), ampicillin (11%), and amoxicillin-clavulanic acid (7%) are the top antibiotics that our observed isolates are resistant to.
 
-In E.coli, the top drugs that these isolates are resistant to are tetracycline (32%), streptomycin (15%), ampicillin (9%), ciprofloxacin (7%), and nalidixic acid (6%).
+In E.coli, the top drugs that these isolates are resistant to are tetracycline (14%), ampicillin (11%), streptomycin (7%), sulfisoxazole (7%), and ceftriaxone (6%).
 
-In Campylobacter, tetracycline (28%), sulfisoxazole (13%), ampicillin (11%), amoxicillin-clavulanic acid (8%), and ciprofloxacin (6%) are the top drugs that isolates show resistance to. 
+In Campylobacter, tetracycline (48%), ciprofloxacin (21%), nalidixic acid (20%), clindamycin (3%), and erythromycin (2%) are the top drugs that isolates show resistance to. 
 
 In general, these bacteria share some of antibiotics that they've grown most resistant to, but also exhibit a few differences.
 
@@ -425,11 +430,11 @@ In general, these bacteria share some of antibiotics that they've grown most res
 ```
 
 
-Regarding the discussion on drug susceptibility, Salmonella isolates saw the most susceptibility to tetracycline (18%), streptomycin (12%), and ampicillin (10%), and sulfisoxazole (9%).
+Regarding the discussion on drug susceptibility, Salmonella isolates saw the most susceptibility to tetracycline (22%), streptomycin (16%), sulfisoxazole (12%), ampicillin (11%), and amoxicillin-clavulanic acid (7%).
 
-In E.coli, isolates and strains were found to be most susceptible to gentamicin (9%), ciprofloxacin (9%), nalidixic acid (8%), azithromycin (7%), and trimethoprim-sulfamethoxazole (5%).
+In E.coli, isolates and strains were found to be most susceptible to meropenem (8%), ciprofloxacin (7%), nalidixic acid (7%), azithromycin (7%), and cefoxitin (7%).
 
-Finally, in Campylobacter, the drugs those isolates were most susceptible to were gentamicin (10%), ciprofloxacin (9%), nalidixic acid (9%), azithromycin (8%), and trimethoprim-sulfamethoxazole (5%).
+Finally, in Campylobacter, the drugs those isolates were most susceptible to were gentamicin (13%), erythromycin (13%), florfenicol (12%), azithromycin (12%), and clindamycin (12%).
 
 Interestingly, we see some overlap in certain bacteria being both susceptible and resistant to the same antibiotics. It'll be interesting to explore this more and see if examine potential shifts from susceptible to resistant status for these illnesses.
 
@@ -740,7 +745,9 @@ In order to assess this, we will compute the similarity scores between the drugs
 
 isolates_df <- isolates_df %>% mutate_all(na_if,"") %>%
   mutate(suscept = tolower(suscept),
-         resist = tolower(resist)
+         resist = tolower(resist),
+         suscept_comb = tolower(suscept_comb),
+         resist_comb = tolower(resist_comb)
          )
 
 
@@ -770,13 +777,13 @@ mean_sim_func <- function(string, clusters) {
 
 
  
-isolates_df <- isolates_df %>%
-  mutate(suscept_sim = mean_sim_func(suscept, snp_cluster),
-         resist_sim = mean_sim_func(resist, snp_cluster),
-         )
+#isolates_df <- isolates_df %>%
+#  mutate(suscept_sim = mean_sim_func(suscept_comb, snp_cluster),
+#         resist_sim = mean_sim_func(resist_comb, snp_cluster),
+#         )
 
 
-write_csv(isolates_df, "data/isolates_df_sim_up.csv")
+#write_csv(isolates_df, "data/isolates_df_sim_up.csv")
 
 isolates_df <- read_csv("data/isolates_df_sim_up.csv")
 isolates_df <- as.data.frame(isolates_df)
@@ -811,7 +818,7 @@ kable(summary_clust_sim,
 ```
 
 
-\textbf{Table 5} shows that on average, the drug behaviors of isolates within the same cluster tend to be fairly similar with mean and median values hovering between 0.75-0.86. Drug behaviors like susceptible dose dependent response and intermediate response have a lot more missingness compared the the data that we have on susceptibility and resistance and so with smaller sample sizes, if the data that we do have are similar and not very variable, these specific behaviors will have high similarity scores. We may consider removing the intermediate and/or susceptible dose dependent behaviors due to their high volumes of missingness. Despite high averages, there are some clusters that don't seem to have low similarity, based on our data. 
+\textbf{Table 5} shows that on average, the drug behaviors of isolates within the same cluster tend to be fairly similar with mean and median values hovering between 0.74-0.86. Despite high averages, there are some clusters that don't seem to have low similarity, based on our data (min cluster average of 0.09 for drug susceptibility and 0.05 for drug resistance. 
 
 We decided to group clusters into two categories, 'close' and 'distant'. Close clusters are defined as clusters with average min-diff or average min-same less than or equal to 10 SNPS. All other clusters are categorized as distant. We looked at the average similarity measures for close and distant clusters and found that in general, clusters that we considered 'close' had high similarity when it came to their isolates' drug responses (\textbf{Table 6}).
 
@@ -823,8 +830,6 @@ close_dist_clust <- isolates_df %>%
   group_by(snp_cluster) %>%
   summarise(avg_suscept_sim = mean(suscept_sim),
             avg_resist_sim = mean(resist_sim),
-            avg_inter_sim = mean(inter_sim),
-            avg_sdd_sim = mean(sdd_sim),
             avg_min_diff = mean(min_diff),
             avg_min_same = mean(min_same)
             ) %>%
@@ -832,8 +837,6 @@ close_dist_clust <- isolates_df %>%
   group_by(close_clust) %>%
   summarise(avg_sus = mean(avg_suscept_sim, na.rm = T),
             avg_res = mean(avg_resist_sim, na.rm = T),
-            avg_int_sim = mean(avg_inter_sim, na.rm = T),
-            avg_sdd_sim = mean(avg_sdd_sim, na.rm = T),
             n = n())
 
 close_dist_clust <- close_dist_clust %>%
@@ -850,8 +853,6 @@ kable(close_dist_clust,
       caption = "Average drug responses for close and distant clusters with closeness being defined as an average min-diff or min-same SNP distance of < 10 SNPS",
       col.names = c("Cluster Type", "Average Susceptibility",
                     "Average Resistance", 
-                    "Average Intermediate",
-                    "Average SDD",
                     "Num Clusters")) %>%
   kable_styling()
 
