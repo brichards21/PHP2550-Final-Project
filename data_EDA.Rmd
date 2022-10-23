@@ -1,7 +1,8 @@
 ---
-title: "Data Exploration PHP2610 Project"
-author: "Breanna Richards"
-date: "2022-10-11"
+title: "Drug Resistance and Susceptibility in Foodborne Illnesses"
+subtitle: "Literature Review and Data Exploration"
+author: "Breanna Richards, Yanru Liao, Jina Yang"
+date: "2022-10-23"
 output: pdf_document
 ---
 
@@ -17,6 +18,9 @@ library(stringdist)
 
 
 ```
+
+
+Link to GitHub Repository: https://github.com/brichards21/PHP2550-Final-Project
 
 
 ## Data Exploration 
@@ -95,7 +99,7 @@ This formula gives the antigen formula and serotype results from an in-silico ex
 
 \textbf{SNP Cluster}
 
-A single nucleotide polymorphism (SNP) is a genomic variant at a single base postion in DNA. It represents the difference in a single DNA building block. A SNP cluster is a group of isolates whose genome assemblies are closely related, depending on the clustering methodology used. This column gives each isolate's pathogen SNP cluster accession.
+A single nucleotide polymorphism (SNP) is a genomic variant at a single base position in DNA. It represents the difference in a single DNA building block. A SNP cluster is a group of isolates whose genome assemblies are closely related, depending on the clustering methodology used. This column gives each isolate's pathogen SNP cluster accession.
 
 
 \textbf{Min-Same and Min Diff}
@@ -199,7 +203,7 @@ We advance by assessing the distributions of our variables, starting with \textb
 ```
 
 
-Next, we looked at the \textbf{collection date} variable to examine the time periods that our data span. Since the raw values of this variable differ in terms of the specificity of the dates, i.e., some values only record year while others record the exact month and day as well, we'll reduce this variable to only the year for consistentcy purposes.
+Next, we looked at the \textbf{collection date} variable to examine the time periods that our data span. Since the raw values of this variable differ in terms of the specificity of the dates, i.e., some values only record year while others record the exact month and day as well, we'll reduce this variable to only the year for consistency purposes.
 
 
 ```{r}
@@ -292,7 +296,7 @@ final_serovar_tbl <- isolates_df[isolates_df$organism_group == "Salmonella enter
 ```
 
 
-With this new subclassified serovar column, we are left with 13 distinct groupings. Aside from the 'Other' Classification group, Kentucky (~14%), Heidelberg (8%), and Typhimurium var. 5- (7%) are the most common serovar groupings. 
+With this new sub classified serovar column, we are left with 13 distinct groupings. Aside from the 'Other' Classification group, Kentucky (~14%), Heidelberg (8%), and Typhimurium var. 5- (7%) are the most common serovar groupings. 
 
 
 The \textbf{AST phenotypes} variable, in its rawest form, come to us as one long string with all of the recorded antibiotics that each isolate is resistant, susceptible, intermediate in response, and susceptible-dose dependent to. We separated and classified this variable into two new variables, collapsing resistant and intermediate drug responses into 'resistant', and collapsing susceptible and susceptible-dose dependent responses into 'susceptible', and listed the corresponding antibiotics for each category. This process was done for ease of use when we eventually go on to build our model and want to separate antibiotics by isolates' responses to them. 
@@ -504,7 +508,7 @@ isolates_df <- isolates_df %>%
 # turkey = string containing turkey 
 # ox = string containing steer or ox
 # dairy = string containing dairy
-# stool = string containing stool or fesces or manure or rect or anus
+# stool = string containing stool or feces or manure or rect or anus
 # blood = string containing blood
 # urine = string containing urine 
 # shrimp = string containing shrimp 
@@ -512,7 +516,7 @@ isolates_df <- isolates_df %>%
 # egg = string containing egg
 # water = water or drainage
 
-# if not NA, other/underspecified 
+# if not NA, other/under-specified 
 # NA = NA
 
 ```
@@ -529,7 +533,7 @@ isolates_df <- isolates_df %>%
 ```
 
 
-The \textbf{isolation source} variable originally hosted 180 unique values. Upon further inspection, we found that a lot of these distinctions were due to case sensitiveness as well as many variations of the same general source. For example, 'pork', 'pork chops', 'pork chop', and 'Pork'. To simply, we grouped the isolates into broader categories based on the content we observed in the isolation source variable. We ultimately reduced this variable to 9 distinct catgeories: pork, chicken, turkey, beef, stool, urine, water, other/unspecified, and NA (for missingness). 
+The \textbf{isolation source} variable originally hosted 180 unique values. Upon further inspection, we found that a lot of these distinctions were due to case sensitiveness as well as many variations of the same general source. For example, 'pork', 'pork chops', 'pork chop', and 'Pork'. To simply, we grouped the isolates into broader categories based on the content we observed in the isolation source variable. We ultimately reduced this variable to 9 distinct categories: pork, chicken, turkey, beef, stool, urine, water, other/unspecified, and NA (for missingness). 
 
 
 ```{r}
@@ -562,7 +566,7 @@ kable(prop_source_bact, caption = "Prop. of Sources Represented Per Bacteria") %
 
 ```
 
-In terms of \textbf{isolation type}, there are 1,405 clinical isolates and 14,644 environmental/other isolates. This brings us to ~91% non-clinical (environmental/other) isolates. There's a difference in the distribution of isolation type in the E.coli bacterium group compared to the other two bacteria (Table 4).
+In terms of \textbf{isolation type}, there are 1,405 clinical isolates and 14,644 environmental/other isolates. This brings us to ~91% non-clinical (environmental/other) isolates. There's a difference in the distribution of isolation type in the E.coli bacterium group compared to the other two bacteria (\textbf{Table 4}).
 
 
 ```{r}
@@ -660,7 +664,8 @@ isolates_df <- isolates_df %>%
 ```
 
 
-Briefly looking at the distribution of this new count variable, we observed that ~66% of isolates from E.coli and Shigella are not "close" to any other isolates while this proportion is around 25-26% for Campylobacter and Salmonella. Our Campylobacter jejuni isolates are the most close with ~44% having a min-diff and min-same value less than 7. This folowed by Salmonella with 35% of records having a min-diff and min-same value less than 7, and then E.coli with only 9% of records having a min-diff and min-same value less than 7. 
+Briefly looking at the distribution of this new count variable, we observed that ~66% of isolates from E.coli and Shigella are not "close" to any other isolates while this proportion is around 25-26% for Campylobacter and Salmonella. Our Campylobacter jejuni isolates are the most close with ~44% having a min-diff and min-same value less than 7. This is followed by Salmonella with 35% of records having a min-diff and min-same value less than 7, and then E.coli with only 9% of records having a min-diff and min-same value less than 7. 
+
 
 ```{r}
 
@@ -674,7 +679,7 @@ prop_close <- prop.table(table(isolates_df$organism_group, isolates_df$num_close
 
 
 
-The last variable that we'll look at broadly is computed types. We start by separating computed types into the two pieces of information that the variable provides: antigen formula and serotype. Perhaps the most important piece of information that we want to extract from this variable is the antigen formula because we already have serotype information from the serovar varialbe. We checked to see if this information serotype and serovar from the two different variables, was comparable or not and found that it was. So, from the computed types variable, we'll only reserve the antigen formula information. 
+The last variable that we'll look at broadly is \textbf{computed types}. We start by separating computed types into the two pieces of information that the variable provides: antigen formula and serotype. Perhaps the most important piece of information that we want to extract from this variable is the antigen formula because we already have serotype information from the serovar variable. We checked to see if this information serotype and serovar from the two different variables, was comparable or not and found that it was. So, from the computed types variable, we'll only reserve the antigen formula information. 
 
 
 ```{r}
@@ -818,7 +823,7 @@ kable(summary_clust_sim,
 ```
 
 
-\textbf{Table 5} shows that on average, the drug behaviors of isolates within the same cluster tend to be fairly similar with mean and median values hovering between 0.74-0.86. Despite high averages, there are some clusters that don't seem to have low similarity, based on our data (min cluster average of 0.09 for drug susceptibility and 0.05 for drug resistance. 
+\textbf{Table 5} shows that on average, the drug behaviors of isolates within the same cluster tend to be fairly similar with mean and median values hovering between 0.74-0.86. Despite high averages, there are some clusters that don't seem to have low similarity, based on our data (min cluster average of 0.09 for drug susceptibility and 0.05 for drug resistance). 
 
 We decided to group clusters into two categories, 'close' and 'distant'. Close clusters are defined as clusters with average min-diff or average min-same less than or equal to 10 SNPS. All other clusters are categorized as distant. We looked at the average similarity measures for close and distant clusters and found that in general, clusters that we considered 'close' had high similarity when it came to their isolates' drug responses (\textbf{Table 6}).
 
@@ -890,7 +895,7 @@ To answer this question, we'll just look at drug responses categorized as either
 #head(isolates_df)
 
 # resistance
-drug_res <- c(isolates_df$resist)
+drug_res <- c(isolates_df$resist_comb)
 drug_res <- drug_res[!is.na(drug_res)]
 
 drug_res <- unlist(strsplit(drug_res, split = ","))
@@ -898,7 +903,7 @@ drug_res <- trimws(drug_res)
 drug_res <- unique(drug_res)
 
 # susceptibility
-drug_sus <- c(isolates_df$suscept)
+drug_sus <- c(isolates_df$suscept_comb)
 drug_sus <- drug_sus[!is.na(drug_sus)]
 
 drug_sus <- unlist(strsplit(drug_sus, split = ","))
@@ -915,32 +920,33 @@ drug_sus <- unique(drug_sus)
 
 ```{r}
 
-# resistance_df <- data.frame(matrix(nrow = nrow(isolates_df),
-#                                    ncol = length(drug_res)))
-# 
-# colnames(resistance_df) <- drug_res
-# 
-# resistance_df <- cbind(isolate = isolates_df$isolate, resistance_df)
-# 
-# for (i in 1:nrow(isolates_df)) {
-#   for (j in 1:length(drug_res)) {
-#   if (grepl(drug_res[j], isolates_df[i, "suscept"]))
-#   {
-#    resistance_df[i, drug_res[j]] <- 1
-#   }
-#     else {
-#       resistance_df[i, drug_res[j]] <- 0
-#     }
-#   }
-# }
-# 
-# resistance_df <- cbind(strain = isolates_df$strain, organism_group = isolates_df$organism_group,
-#                        collection_date = isolates_df$collection_date,
-#                        snp_cluster = isolates_df$snp_cluster, resistance_df)
-# 
+resistance_df <- data.frame(matrix(nrow = nrow(isolates_df),
+                                   ncol = length(drug_res)))
+
+colnames(resistance_df) <- drug_res
+
+resistance_df <- cbind(isolate = isolates_df$isolate, resistance_df)
+
+for (i in 1:nrow(isolates_df)) {
+  for (j in 1:length(drug_res)) {
+  if (grepl(drug_res[j], isolates_df[i, "resist_comb"]))
+  {
+   resistance_df[i, drug_res[j]] <- 1
+  }
+    else {
+      resistance_df[i, drug_res[j]] <- 0
+    }
+  }
+}
+
+resistance_df <- cbind(strain = isolates_df$strain, organism_group = isolates_df$organism_group,
+                       collection_date = isolates_df$collection_date,
+                       snp_cluster = isolates_df$snp_cluster, resistance_df)
+
 
 
 ```
+
 
 
 ```{r}
@@ -952,7 +958,55 @@ resistance_df <- as.data.frame(read_csv("data/resistance_df.csv"))
 #colnames(resistance_df) <- gsub("\\...*","",colnames(resistance_df))
 ```
 
-Since we've established that clusters tend to be very similar in terms of their drug responses 
+
+
+```{r}
+
+susceptible_df <- data.frame(matrix(nrow = nrow(isolates_df),
+                                   ncol = length(drug_sus)))
+
+colnames(susceptible_df) <- drug_sus
+
+susceptible_df <- cbind(isolate = isolates_df$isolate, susceptible_df)
+
+for (i in 1:nrow(isolates_df)) {
+  for (j in 1:length(drug_sus)) {
+  if (grepl(drug_sus[j], isolates_df[i, "suscept_comb"]))
+  {
+   susceptible_df[i, drug_sus[j]] <- 1
+  }
+    else {
+      susceptible_df[i, drug_sus[j]] <- 0
+    }
+  }
+}
+
+susceptible_df <- cbind(strain = isolates_df$strain, organism_group = isolates_df$organism_group,
+                       collection_date = isolates_df$collection_date,
+                       snp_cluster = isolates_df$snp_cluster, susceptible_df)
+
+
+
+```
+
+
+```{r}
+
+#write_csv(susceptible_df, "data/susceptible_df.csv")
+
+susceptible_df <- as.data.frame(read_csv("data/susceptible_df.csv"))
+
+#colnames(resistance_df) <- gsub("\\...*","",colnames(resistance_df))
+```
+
+
+
+
+Since we've established that clusters tend to be very similar in terms of their drug responses, we'll approach this problem by looking at how the mean drug responses per cluster have changed over time. Year is the variable that we used for time. In terms of drug response, an isolate within a cluster was given a value of '1' in either a variable representing drug resistance or susceptibility, if it was susceptible or resistant to that drug. Otherwise, an isolate was given a value of 0. When we group these isolates into their clusters and take each cluster's mean response variable by year, these means will be between 0 and 1 (inclusive) because we're taking means of binary responses.
+
+For illustration purposes, we randomly sampled 5 clusters to show potential changes over time. Let's start with drug resistance to the most popular drug, tetracycline.
+
+
 
 ```{r}
 
@@ -961,15 +1015,17 @@ resistance_sum <- resistance_df %>%
   summarise_if(is.numeric, funs(mean)) %>%
   pivot_longer(!c(snp_cluster, collection_date), names_to = "drug",
                values_to = "resistance")
+
 ```
 
 
 
 ```{r}
-set.seed(1)
+set.seed(1999)
 
 
 subset_clust <- resistance_sum %>%
+  filter(drug == "tetracycline") %>%
   group_by(snp_cluster, collection_date) %>%
   summarise(n = n()) %>%
   group_by(snp_cluster) %>%
@@ -977,43 +1033,137 @@ subset_clust <- resistance_sum %>%
   arrange(desc(n)) %>%
   filter(n > 5, !is.na(snp_cluster)) 
 
-rand_10_clusts <- sample(unique(subset_clust$snp_cluster), 10)
+rand_5_clusts <- sample(unique(subset_clust$snp_cluster), 5)
 ```
+
+
+
+
 
 
 ```{r}
 
- rand10_clusts_df <- resistance_sum[resistance_sum$snp_cluster %in% rand_10_clusts, ]
+susceptible_sum <- susceptible_df %>%
+  group_by(snp_cluster, collection_date) %>%
+  summarise_if(is.numeric, funs(mean)) %>%
+  pivot_longer(!c(snp_cluster, collection_date), names_to = "drug",
+               values_to = "susceptibility")
 
-ggplot(rand10_clusts_df[rand10_clusts_df$drug ==
+```
+
+
+```{r}
+set.seed(1999)
+
+
+subset_clust_sus <- susceptible_sum %>%
+  filter(drug == "tetracycline") %>%
+  group_by(snp_cluster, collection_date) %>%
+  summarise(n = n()) %>%
+  group_by(snp_cluster) %>%
+  summarise(n = n()) %>%
+  arrange(desc(n)) %>%
+  filter(n > 5, !is.na(snp_cluster)) 
+
+rand_5_clusts_sus <- sample(unique(subset_clust_sus$snp_cluster), 5)
+
+```
+
+
+
+
+
+```{r fig2, fig.cap= "5 clusters' mean resistance to Tetracycline over time"}
+
+
+ rand5_clusts_df <- resistance_sum[resistance_sum$snp_cluster %in% rand_5_clusts, ]
+
+ggplot(rand5_clusts_df[rand5_clusts_df$drug ==
                         "tetracycline",], aes(x = collection_date, y = resistance,
                            col = snp_cluster,
                            group = snp_cluster)) +
-  geom_point() +
-  geom_line(size = 1) +
-  labs(col = "")
+  geom_point(size = 2) +
+  geom_line(size = 0.6) +
+  labs(col = "cluster", x = "year") +
+  theme_bw() +
+  geom_hline(yintercept = 0.5, col = "red", linetype = "dashed",
+             size = 0.6)
 
 
 
 ```
 
 
+Evidently, we observe that in general, isolates that seem to be very similar in terms of their drug responses (i.e. isolates within the same cluster), demonstrate variability in their drug resistance over time (\textbf{Figure 2}). If we draw a line at 0.5 and classify average resistance at or above that line as being drug resistant and responses below that line as not being drug resistant, then we can see that for similar isolates, over time, mean responses have crossed the line between being drug resistant and not.
+
+We can do the same thing to observe changes over time for drug susceptibility.
+
+
+```{r fig3, fig.cap= "5 clusters' mean susceptibility to Tetracycline over time"}
+
+
+ rand5_clusts_df_sus <- susceptible_sum[susceptible_sum$snp_cluster %in% rand_5_clusts_sus, ]
+
+ggplot(rand5_clusts_df_sus[rand5_clusts_df_sus$drug ==
+                        "tetracycline",], aes(x = collection_date, y = susceptibility,
+                           col = snp_cluster,
+                           group = snp_cluster)) +
+  geom_point(size = 2) +
+  geom_line(size = 0.6) +
+  labs(col = "cluster", x = "year") +
+  theme_bw() +
+  geom_hline(yintercept = 0.5, col = "red", linetype = "dashed",
+             size = 0.6)
+
+
+
+```
+
+
+
+We see similar behaviors in drug susceptibility. Even in just a random subset of 5 clusters, we observed that over time, some clusters' mean responses have crossed that 0.5 threshold of being susceptible or not being susceptible (\textbf{Figure 3}).
+
+
 ## Limitations
 
-We recognize that there are several limitations that our data pose to fully exploring our research question. As aforementioned, by only retaining records from the NCBI database 
+We recognize that there are several limitations that our data pose to fully exploring our research question. As aforementioned, by only retaining records from the NCBI database that have non-missingness in drug response, we've limited the isolates and cases that we're able to observe as the drug response variable (`AST_phenotypes`) is more often than not missing. Additionally, this variable is defined by the data submitter, so there could be some error or objectivity involved in that process. The NCBI Pathogen Detection Help Documentation site notes that these data are typically submitted using CLSI or EUCAST guidelines, which change over time. Alternatively, drug response classification is decided by an automated instrument which may infer cutoffs. This could mean that records submitted using an earlier standard/guideline may have different resistance and susceptibility criteria for the same antibiotic compound than it would using a later standard. Even for the same organism and same isolate, different tests may yield different results. This may bring some nuance into the problem space of what we observe in our data as criteria don't seem to be uniform overtime and may vary depending on the different standards used to define drug response.
+
+Additionally, some of the variables that we observe only have information for Salmonella isolates. These variables are antigen formula and serovar/serotype. And so, these variables may only be helpful to refine our future analysis for Salmonella but won't be able to contribute to our other two bacteria of interest. It's also a bit of a nuanced process to assess changes in drug response over time. Strains in our data are more unique than not, and it's rare that we observe the same strain twice, especially in different years. To try and remedy this, because of the similarity that we saw between isolates within the same cluster, we approached the problem by assessing each cluster's mean response and imposing a 0.5 threshold on those mean responses to categorize those isolates generally being susceptible or not, and resistant or not. This approach is also taking a strong assumption that if an isolate is susceptible or resistant to an antibiotic, then that would recorded in the data, which reasonably, probably doesn't always hold true. Additionally, we note that genomic responses to antibiotics are more than likely to change over time as bacteria start to learn more about the antibiotics that we may use to treat them, and in response may eventually build a resistance to them. This problem space surrounding treatment is ongoing and constantly in flux due to this. Thus, we realize that what is represented in our data now may or may not be a good scope for what could be represented in data like this for future years.
+
 
 ## Conclusion
 
+The use of antibiotics for the treatment of foodborne illnesses is of growing interest in the field of human health. We have grasped a solid understanding of our data and the distributions of the variables represented in our data. We've learned that variables within the same cluster and variables that are considered 'close' in terms of their SNP distance, tend to have similar responses to certain drugs. Similarity in both genomic, clinical, and environmental characteristics is going to define the conversation surrounding this study. By assessing the similarity of our isolates, we may be able to pull significant information about patterns of drug response and how they relate to these values/points of similarity.
+
+Moving forward, we aim to go more in depth with our data and extract patterns and relationships between our covariates of interest as they relate to antibiotic resistance and susceptibility. We will specifically focus more on the genes found in our isolates and the connections that we can draw with antibiotic response in that aspect. The broader goal of this study is to investigate the efficacy of and build a classification model to predict a pathogen's response to an antibiotic (resistant or susceptible). Essentially, we want to approach this as a binary classification problem. This model will be trained to consider the optimal hyper-parameters and covariates for a well-considered bias-variance trade-off, and tested to assess accuracy in prediction. The specifications of the model(s) that we will want to try are not solidified as of now but we are considering logistic regression and multiple machine learning methods for binary classification like random forests. We may also assess how effectively we can cluster our isolates and how well those clusters may match our observed antibiotic resistance and susceptibility behaviors.
 
 
 \newpage 
 
-References
+## References
+
+Edgar, R. C. (2010). Search and clustering orders of magnitude faster than BLAST. Bioinformatics (Oxford, England), 26(19), 2460–2461. https://doi.org/10.1093/bioinformatics/btq461
 
 
-[3] https://www.ncbi.nlm.nih.gov/pmc/articles/PMC2871933/
+Hashempour-Baltork, F., Hosseini, H., Shojaee-Aliabadi, S., Torbati, M., Alizadeh, A. M., & Alizadeh, M. (2019). Drug Resistance and the Prevention Strategies in Food Borne Bacteria: An Update Review. Advanced Pharmaceutical Bulletin, 9(3), 335–347. https://doi.org/10.15171/apb.2019.041
 
 
-  van der Loo M (2014). “The stringdist package for approximate string
-  matching.” _The R Journal_, *6*, 111-122.
-  <https://CRAN.R-project.org/package=stringdist>.
+Hassani, S., Moosavy, M.-H., Gharajalar, S. N., Khatibi, S. A., Hajibemani, A., & Barabadi, Z. (2022). High prevalence of antibiotic resistance in pathogenic foodborne bacteria isolated from bovine milk. Scientific Reports, 12(1), Article 1. https://doi.org/10.1038/s41598-022-07845-6
+
+
+Rajaei, M., Moosavy, M.-H., Gharajalar, S. N., & Khatibi, S. A. (2021). Antibiotic resistance in the pathogenic foodborne bacteria isolated from raw kebab and hamburger: Phenotypic and genotypic study. BMC Microbiology, 21(1), 272. https://doi.org/10.1186/s12866-021-02326-8
+
+
+Ren, Y., Chakraborty, T., Doijad, S., Falgenhauer, L., Falgenhauer, J., Goesmann, A., Hauschild, A.-C., Schwengers, O., & Heider, D. (2022). Prediction of antimicrobial resistance based on whole-genome sequencing and machine learning. Bioinformatics, 38(2), 325–334. https://doi.org/10.1093/bioinformatics/btab681
+
+
+Van Camp, P.-J., Haslam, D. B., & Porollo, A. (2020). Prediction of Antimicrobial Resistance in Gram-Negative Bacteria From Whole-Genome Sequencing Data. Frontiers in Microbiology, 11, 1013. https://doi.org/10.3389/fmicb.2020.01013
+
+
+van der Loo M (2014). “The stringdist package for approximate string matching.” _The R Journal_, *6*, 111-122.
+<https://CRAN.R-project.org/package=stringdist>.
+
+
+
+
+ 
