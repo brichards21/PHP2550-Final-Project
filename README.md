@@ -1,16 +1,25 @@
-# Drug Resistance and Susceptibility for Foodborne Illnesses in Salmonella, E.coli, and Campylobacter
+# Drug Resistance and Susceptibility for Foodborne Illnesses in the Salmonella, E.coli, and Campylobacter Species
 
 This project was conducted as a final project for the PHP2550 Fall2022 Practical Data Analysis class taken within Brown University's School of Public Health.
 
 
 ## Intro: 
-- In this project, drug resistance and susceptibility of bacteria isolates are predicted based on genomics. We plan to tract their changes over time. This allows us to forecast bacteria-related foodborne disease outbreaks. 
+Every year approximately 1 in 10 people globally contract some kind of foodborne illness, including isteria,
+Salmonella, and E. Coli. About 420,000 die from these illnesses annually. While multi-state outbreaks are recorded on the CDC website, but it can be a tedious process to track these cases to their sources and impose appropriate prevention regulations in a timely manner. The goal of this project is to use
+past data on foodborne illness occurrence to help prevent and reduce future cases. This project is informed by the objectives of the [Healthy People 2030 Foodborne Illness Reduction Committee](https://health.gov/healthypeople/objectives-and-data/browse-objectives/foodborne-illness). The scope of this project focuses on potential intervention and treatment measures in the form of antibiotic response.
 
+- In this project, we will predict drug resistance and susceptibility of bacteria isolates based on genomics. We plan to tract how these characteristics change over time as well as how drug resistance changes over time. This will allow us to forecast bacteria-related foodborne disease antibiotic response for future cases. 
+
+## Data Source:
+The primary data source used in this project is the [National Center for Biotechnology Information’s
+(NCBI) Pathogen database](https://www.ncbi.nlm.nih.gov/pathogens/). This database includes information about sequenced bacterial pathogens that originate from a food source. It records isolates with source and genetic information. For the purposes of this study, data on the Salmonella enterica, E.coli and Shigella, and Campylobacter jejuni species were extracted on *October 16, 2022*. Thus, this study only retains records that were updated up to that date.
 
 ## Goal: 
-- The goal of our project is to investigate if we can identify the antibiotic resistance of future isolates. We will establish a system that recommends antibiotics to future isolates from previous isolates. 
+- The goal of our project is to investigate if we can identify the antibiotic resistance of future isolates. We will establish a system that recommends antibiotics to future isolates from previous isolates.
+- Generally, we will also extract patterns and associations between genomic, clinical, and environmental characteristics of foodborne illness isolates and assess how they relate to antibiotic response. 
 
 ## Tech used: 
+- R and RStudio
 - R Markdown
 
 ------------------------------------------------------------
