@@ -306,8 +306,9 @@ The \textbf{AST phenotypes} variable, in its rawest form, come to us as one long
 
 AST_df <- isolates_df[, c("isolate", "ast_phenotypes")] 
 
-reorg_AST_df <- data.frame(matrix(ncol = 2, nrow = 0))
-colnames(reorg_AST_df) <- c("resist", "suscept")
+reorg_AST_df <- data.frame(matrix(ncol = 4, nrow = 0))
+colnames(reorg_AST_df) <- c("resist_comb", "suscept_comb",
+                            "resist", "suscept")
 
 for (i in 1:nrow(AST_df)) {
   
@@ -350,8 +351,10 @@ SDD_vec <- c() # susceptible-dose dependent
   
   
    reorg_AST_df <- rbind(reorg_AST_df, 
-                          data.frame("resist" = unique(c(R_vec, I_vec)),
-                                     "suscept" = unique(c(S_vec, SDD_vec))))
+                          data.frame("resist_comb" = unique(c(R_vec, I_vec)),
+                                     "suscept_comb" = unique(c(S_vec, SDD_vec)),
+                                     "resist" = R_vec,
+                                     "suscept" = S_vec))
 }
 
 
@@ -770,8 +773,6 @@ mean_sim_func <- function(string, clusters) {
 isolates_df <- isolates_df %>%
   mutate(suscept_sim = mean_sim_func(suscept, snp_cluster),
          resist_sim = mean_sim_func(resist, snp_cluster),
-         inter_sim = mean_sim_func(inter, snp_cluster),
-         sdd_sim = mean_sim_func(suscept_dose_dep, snp_cluster)
          )
 
 
@@ -786,17 +787,15 @@ isolates_df <- as.data.frame(isolates_df)
 ```{r}
 
 cluster_stats <- isolates_df %>%
-  group_by(snp_cluster, suscept_sim, resist_sim, inter_sim, sdd_sim) %>%
+  group_by(snp_cluster, suscept_sim, resist_sim) %>%
   summarise(avg_suscept_sim = mean(suscept_sim),
-            avg_resist_sim = mean(resist_sim),
-            avg_inter_sim = mean(inter_sim),
-            avg_sdd_sim = mean(sdd_sim))
+            avg_resist_sim = mean(resist_sim))
 
 
 summary_clust_sim <- as.data.frame(do.call(cbind, lapply(cluster_stats, summary))) %>%
   select(-snp_cluster)
 
-summary_clust_sim <- summary_clust_sim[, 5:8]
+summary_clust_sim <- summary_clust_sim[, 3:4]
 
 ```
 
@@ -806,9 +805,7 @@ summary_clust_sim <- summary_clust_sim[, 5:8]
 kable(summary_clust_sim,
       caption = "Drug Behavior Similarity between Clusters",
       col.names = c("Susceptible Sim.",
-                    "Resistant Sim.",
-                    "Intermediate Sim.",
-                    "Suscept. Dose Dependent Sim.")) %>%
+                    "Resistant Sim.")) %>%
   kable_styling()
 
 ```
@@ -999,9 +996,10 @@ ggplot(rand10_clusts_df[rand10_clusts_df$drug ==
 
 ```
 
+
 ## Limitations
 
-
+We recognize that there are several limitations that our data pose to fully exploring our research question. As aforementioned, by only retaining records from the NCBI database 
 
 ## Conclusion
 
