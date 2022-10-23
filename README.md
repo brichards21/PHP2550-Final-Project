@@ -19,7 +19,7 @@ The primary data source used in this project is the [National Center for Biotech
 - Generally, we will also extract patterns and associations between genomic, clinical, and environmental characteristics of foodborne illness isolates and assess how they relate to antibiotic response. 
 
 ## Tech used: 
-- R and RStudio
+- R Version 4.2.0 and RStudio
 - R Markdown
 
 ------------------------------------------------------------
