@@ -32,7 +32,7 @@ Filtering records from all three of the species, our final dataset contained 8,6
 
 ### Variables
 
-There are several variables in the NCBI dataset that we are considering in our study (\textit{National Center for Biotechnology Information}). 
+There are several variables in the NCBI dataset that we are considering in our study (National Center for Biotechnology Information). 
 
 
 \textbf{Organism group}
@@ -609,11 +609,24 @@ There are 2,613 \textbf{SNP clusters} represented in our data, 811 clusters for 
 ```
 
 
-There are 3,085 unique sets of \textbf{AMR genotypes} represented in the data, which we are very interested in dissecting and using to supplement our AST phenotype information in our broader study.
+There are 3,085 unique sets of \textbf{AMR genotypes} represented in the data, which we are very interested in dissecting and using to supplement our AST phenotype information in our broader study. These genes will be parsed through during the process of clustering and evaluated for biological relevance in relation to drug response. Overall, mdsA (11%), mdsB (11%), blaEC (5%), and acrF (5%) are the most common antimicrobial resistant genes found in our isolates. Breaking it down by bacteria, within Salmonella, the most common genes are mdsA, mdsB, tet(A), aph(3'')-Ib, and aph(6)-Ib. In E.coli, the top 5 are blaEC, acrF, mdtM, tet(A), and aph(3'')-Ib. Finally, in Campylobacter, the most common genes are tet(O), blaOXA-193, 50S_L22_A103V, gyrA_T86I, and aph(3')-IIIa. We undoubtedly observe heterogeneity between the three species.
 
 ```{r}
 
 #length(unique(isolates_df$amr_genotypes))
+split_genes <- unlist(str_split(unlist(isolates_df$amr_genotypes), ","))
+split_genes_sal <- unlist(str_split(unlist(isolates_df[isolates_df$organism_group == "Salmonella enterica",]$amr_genotypes), ","))
+
+split_genes_ecoli <- unlist(str_split(unlist(isolates_df[isolates_df$organism_group == "E.coli and Shigella",]$amr_genotypes), ","))
+
+split_genes_camp <- unlist(str_split(unlist(isolates_df[isolates_df$organism_group == "Campylobacter jejuni",]$amr_genotypes), ","))
+  
+#sort(prop.table(table(split_genes)), decreasing = T)
+
+#sort(prop.table(table(split_genes_sal)), decreasing = T)
+#sort(prop.table(table(split_genes_ecoli)), decreasing = T)
+#sort(prop.table(table(split_genes_camp)), decreasing = T)
+
 
 ```
 
@@ -1124,7 +1137,9 @@ Additionally, some of the variables that we observe only have information for Sa
 
 The use of antibiotics for the treatment of foodborne illnesses is of growing interest in the field of human health. We have grasped a solid understanding of our data and the distributions of the variables represented in our data. We've learned that variables within the same cluster and variables that are considered 'close' in terms of their SNP distance, tend to have similar responses to certain drugs. Similarity in genomic, clinical, and environmental characteristics is going to define the conversation surrounding this study. By assessing the similarity of our isolates, we may be able to pull significant information about patterns of drug response and how they relate to these values/points of similarity.
 
-Moving forward, we aim to go more in depth with our data and extract patterns and relationships between our covariates of interest as they relate to antibiotic resistance and susceptibility. We will specifically focus more on the genes found in our isolates and the connections that we can draw with antibiotic response in that aspect. The broader goal of this study is to investigate the efficacy of and build a classification model to predict a pathogen's response to an antibiotic (resistant or susceptible). Essentially, we want to approach this as a binary classification problem. This model will be trained to consider the optimal hyper-parameters and covariates for a well-considered bias-variance trade-off, and tested to assess accuracy in prediction. The specifications of the model(s) that we will want to try are not solidified as of now but we are considering logistic regression and multiple machine learning methods for binary classification like random forests. We may also assess how effectively we can cluster our isolates and how well those clusters may match and define our observed antibiotic resistance and susceptibility behaviors.
+Moving forward, we aim to go more in depth with our data and extract patterns and relationships between our covariates of interest as they relate to antibiotic resistance and susceptibility. We will specifically focus more on the genes found in our isolates and the connections that we can draw with antibiotic response in that aspect. The broader goal of this study is to investigate the efficacy of and build a classification model to predict a pathogen's response to an antibiotic (resistant or susceptible). Essentially, we want to approach this as a binary classification problem. This model will be trained to consider the optimal hyper-parameters and covariates for a well-considered bias-variance trade-off, and tested to assess accuracy in prediction. The specifications of the model(s) that we will want to try are not solidified as of now but we are considering logistic regression and multiple machine learning methods for binary classification like random forests. We will also assess how effectively we can cluster antibiotic resistant genes and assess how well those clusters may match and define our observed antibiotic resistance and susceptibility behaviors to treatment.
+
+Overall our models will be assessed using classification and clustering performance metrics like area under the ROC curve (AUC), and silhouette scores.
 
 
 \newpage 
