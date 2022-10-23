@@ -3,9 +3,15 @@
 This project was conducted as a final project for the PHP2550 Fall2022 Practical Data Analysis class taken within Brown University's School of Public Health.
 
 
-[Jina's description of Project HERE]
+## Intro: 
+- In this project, drug resistance and susceptibility of bacteria isolates are predicted based on genomics. We plan to tract their changes over time. This allows us to forecast bacteria-related foodborne disease outbreaks. 
 
 
+## Goal: 
+- The goal of our project is to investigate if we can identify the antibiotic resistance of future isolates. We will establish a system that recommends antibiotics to future isolates from previous isolates. 
+
+## Tech used: 
+- R Markdown
 
 ------------------------------------------------------------
 
