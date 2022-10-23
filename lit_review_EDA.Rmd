@@ -1,10 +1,9 @@
 ---
 title: "Drug Resistance and Susceptibility in Foodborne Illnesses"
-subtitle: "Data Exploration"
-author: "Breanna Richards, Yanru Liao, Jina Yang"
+subtitle: "Literature Review and Data Exploration"
+author: "Yanru Liao, Breanna Richards, Jina Yang"
 output: pdf_document
 ---
-
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(message=FALSE, warning=FALSE, error=FALSE, echo = FALSE, fig.width = 6, fig.height = 4)
 library(readr)
@@ -20,6 +19,9 @@ library(stringdist)
 
 
 Link to GitHub Repository: https://github.com/brichards21/PHP2550-Final-Project
+
+## Literature Review
+
 
 
 ## Data Exploration 
