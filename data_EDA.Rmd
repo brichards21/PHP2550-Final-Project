@@ -12,7 +12,6 @@ library(janitor)
 library(tidyverse)
 library(knitr)
 library(kableExtra)
-library(RecordLinkage)
 library(stringdist)
 
 
