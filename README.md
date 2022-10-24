@@ -26,7 +26,7 @@ The primary data source used in this project is the [National Center for Biotech
 
 ## Organization 
 
-- `data`: This folder contains the `.csv` data files used in order to conduct the analyses for our study. Within the data folder is a folder entitled `raw_data`. This folder contains the raw data files pulled directly from the [NCBI website](https://www.ncbi.nlm.nih.gov/pathogens/). Cleaned data used for the study is stored outside of the `raw_data` folder.
+- `data`: This folder contains the `.csv` data files used in order to conduct the analyses for our study. Within the data folder is a folder entitled `raw_data`. This folder contains the raw data files pulled directly from the [NCBI website](https://www.ncbi.nlm.nih.gov/pathogens/). Cleaned data used for the study is stored outside of the `raw_data` folder. Within this folder is a `data_cleaning.R` file that compiles all of the code involved in the data cleaning process.
 
 - `Literature`: This folder contains all of the relevant literature reviewed for the sake of this study and project. 
 
