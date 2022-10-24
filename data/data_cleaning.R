@@ -326,3 +326,6 @@ susceptible_sum <- susceptible_df %>%
   pivot_longer(!c(snp_cluster, collection_date), names_to = "drug",
                values_to = "susceptibility")
 
+
+
+
