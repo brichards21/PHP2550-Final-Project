@@ -875,32 +875,13 @@ kable(close_dist_clust,
 
 
 
-
-```{r}
-
-
-# isolates_df <- isolates_df %>%
-#   mutate(iso_suscept_sim = mean_sim_func(suscept, isolation_source_new),
-#          iso_resist_sim = mean_sim_func(resist, isolation_source_new),
-#          iso_inter_sim = mean_sim_func(inter, isolation_source_new),
-#          iso_sdd_sim = mean_sim_func(suscept_dose_dep, isolation_source_new)
-#          )
-
-
-```
-
-
-
-
-
-
 The second question that we considered is: 
 
 Does drug resistance and susceptibility change over time?
 
 
 ```{r}
-#head(isolates_df)
+
 
 # resistance
 drug_res <- c(isolates_df$resist_comb)
