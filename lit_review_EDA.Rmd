@@ -160,7 +160,7 @@ missing_table_k <- missing_table %>%
 ```
 
 
-\textbf{Table 1} gives the variables with missingness and orders them from most missing to least missing. As a rule of thumb, we may want to omit the variables with over 90% missingness as they may not be informative in our analysis. The variables that fit this criteria in our data are `outbreak`, `host disease`, and `host`. We recognize that our study will not be informed by information about an isolate's host disease, host species, and origin from an outbreak. 
+\textbf{Table 1} gives the variables with any missingness and orders them from most missing to least missing (variables with no missing variables will not be listed). As a rule of thumb, we may want to omit the variables with over 90% missingness as they may not be informative in our analysis. The variables that fit this criteria in our data are `outbreak`, `host disease`, and `host`. We recognize that our study will not be informed by information about an isolate's host disease, host species, and origin from an outbreak. 
 
 ```{r tab_missing_data}
 
