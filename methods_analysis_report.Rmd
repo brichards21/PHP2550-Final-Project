@@ -1,0 +1,520 @@
+---
+title: "Methods and Analysis"
+author: "Breanna Richards"
+date: "2022-11-08"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(message=FALSE, warning=FALSE, error=FALSE, echo = FALSE, fig.width = 6, fig.height = 4)
+
+library(readr)
+library(tidyverse)
+library(randomForest)
+library(Boruta)
+library(Amelia)
+library(AUC)
+library(ggplot2)
+library(Metrics)
+library(kableExtra)
+library(knitr)
+library(caret)
+library(ROCR)
+library(gt)
+#library(rlang)
+library(janitor)
+library(dplyr)
+```
+
+Recall that the aim of this study is to assess if we can predict future isolate’s performance against certain antibiotics where ‘performance’ is a binary discretion of either susceptible or resistant. In other words, can we learn from past isolates to develop a system to recommend antibiotics to new isolates? We are also generally interested in the kind of patterns that we can extract from our current data about behaviors of drug susceptibility and resistance including how responses to these antibiotics shift over time.
+
+The analysis focuses on isolate data collected from the Salmonella enterica, E.coli and Shigella, and Campylobacter jejuni species in the National Center for Biotechnology Information’s (NCBI) Pathogen database. Initially, we had decided to evaluate isolates from these three bacteria within joint modelling and analysis procedures. However, through our data exploration process, we found that our Salmonella isolates had retained two additional pieces of information compared to the E.coli and Campylobacter isolates. This information are antigen formula, which  gives the detected presence of a specific viral antigen indicating viral infection, and serovar/serotype which gives the distinct variation within a certain bacteria. Additionally, while isolate data for Salmonella were retained from 2002 - 2021, E.coli and Campylobacter records didn’t begin presenting themselves in our data until much later (2009 for E.coli and Shigella, and 2016 for Campylobacter). For these reasons, we decided to address the Salmonella isolates separate from the E.coli and Campylobacter isolates, i.e., we’ll be building two separate models to address our main research question of interest: one for Salmonella isolates, and another for both E.coli and Campylobacter.
+
+The full scope of our data contains isolates that are resistant and/or susceptible to 79 unique antibiotics, 76 of which these isolates have shown resistance to, and 62 of which these isolates have shown susceptibility to. Evidently, whereas some isolates have shown resistance to a certain durg, other isolates have shown susceptibility to the same drug. The idea is to create a system or function that will take information about isolates as input values and then within a subset of most common drugs we’ve found the isolates to show the most response to, reccomend the one that we’ve predicted with the most evidence that new isolate is most susceptible to, along with the level of confidence that we have in this recommendation (i.e. the probability that we obtain from our classification model). Therefore, since this is a binary classification problem, on the data that we’ll use to develop our models, we’ll code ‘1’ as drug susceptiblity, ‘0’ as drug resistance, and NA if we do not retain any information about that particular drug on a given particular isolate. 
+
+As it’s not entirely feasible for us to predict drug response to each and every one of these 79 drugs, we decided to first focus on predicting responses to the most common drugs isolates represented in each of our now two separate datasets, one set for Salmonella, and a second joint set for Campylobacter and E.coli. Antibiotics up for consideration in our model fulfill one of two criteria: 1) represents at least 10% of all drugs within a given bacteria that were reported for isolate susceptibility or resistance, or 2) in the case that no drug represents at least 10% of all drugs reported for susceptibility or resistance within a given bacteria, be within the top two most common drugs that isolates of a given bacteria have shown susceptibility or resistance to. \textbf{Table 1} shows the most common antibiotics isolates within each bacteria showed resistance and susceptibility to. We combine the unique set of these antibiotics as the antibiotics that we will include in our model.
+
+
+\begin{table}[hbtp]
+\centering
+\caption{Antibiotics Considered in Modeling}  
+\includegraphics[width=12cm, height=12cm, keepaspectratio]{drug_tbl.png}
+\end{table}
+
+The final piece of pre-processing that our data has undergone involves the reformatting of the prevalence of the antimicrobrial resistant genes found in the isolates. There are 499 unique resistant genes found in the isolates within our data. In order to include some level of gene resistant presence as predictors in our model, we chose to include binary variables for the most common resistant genes observed in our data. These variables took a value of 1 if found within a given isolate, and a value of 0 is not found within a given isolate. The genes that we decided to include as predictors in each of the two separate models (one for Salmonella, and another jointly for E.coli and Campylobacter) are displayed in \textbf{Table 2}. We decided to retain the genes with over 2% prevalence in the Salmonella isolates, and the genes with over 3% prevalence in either the E.coli isolates or the Campylobacter isolates. A higher prevalence threshold of 3% was chosen for E.coli and Campylobacter as to not overpopulate the joint E.coli and Campylobacter model with these genetic predictors.  
+
+
+
+\begin{table}[hbtp]
+\centering
+\caption{Antimicrobial Resistant Genes Considered in Modeling}  
+\includegraphics[width=12cm, height=12cm, keepaspectratio]{anti_micr_tbl.png}
+\end{table}
+
+```{r}
+
+# top susceptibility # top resistance # unique antibiotics used in model
+
+# rownames - Salmonella enterica, E.coli and Shigella, Campylobacter jejuni
+
+isolates_df <- read_csv("data/isolates_df.csv")
+
+salmonella_df <- isolates_df %>%
+  filter(organism_group == "Salmonella enterica")
+# 8672 records
+
+ecoli_df <- isolates_df %>%
+  filter(organism_group == "E.coli and Shigella")
+
+campy_df <- isolates_df %>%
+  filter(organism_group == "Campylobacter jejuni")
+
+ecoli_campy_df <- isolates_df %>%
+  filter(organism_group != "Salmonella enterica")
+# 7377  records 
+
+
+
+```
+
+
+
+```{r}
+
+genes_salm <- unlist(str_split(salmonella_df$amr_genotypes, ","))
+
+genes_ecoli <- unlist(str_split(ecoli_df$amr_genotypes, ","))
+
+genes_campy <- unlist(str_split(campy_df$amr_genotypes, ","))
+
+
+#length(unique(c(genes_salm, genes_ecoli, genes_campy)))
+
+```
+
+
+```{r}
+
+common_genes_salm <- as.data.frame(sort(prop.table(table(genes_salm)), decreasing = T)) %>%
+  filter(Freq >= 0.02)
+
+common_genes_ecoli <- as.data.frame(sort(prop.table(table(genes_ecoli)), decreasing = T)) %>%
+  filter(Freq >= 0.03)
+
+common_genes_campy <- as.data.frame(sort(prop.table(table(genes_campy)), decreasing = T)) %>%
+  filter(Freq >= 0.03)
+
+
+```
+
+
+
+```{r}
+
+
+salmonella_df[paste0(common_genes_salm$genes_salm)] <- do.call(cbind, as.list(0))
+
+
+anti_salm_df <- salmonella_df[, c(12, 26:37)]
+
+for (i in 2:ncol(anti_salm_df)) {
+  drug_test <- c(colnames(anti_salm_df[-c(4, 5, 6, 7)]),
+                "tet\\(A\\)=COMPLETE",
+                "aph\\(3''\\)-Ib=COMPLETE",
+                "aph\\(6\\)-Id=COMPLETE",
+                "tet\\(B\\)=COMPLETE")
+    drug <- drug_test[i]
+    
+  for (j in 1:nrow(anti_salm_df)) {
+
+  
+  salmonella_df[j, drug] <- ifelse(grepl(drug, anti_salm_df[j, ]$amr_genotypes), 1, 0)
+  
+  }
+  
+}
+
+salmonella_df <- salmonella_df[, -c(28:31)]
+
+```
+
+
+```{r}
+
+genes_ecoli_campy <- unique(c(common_genes_ecoli$genes_ecoli,
+         common_genes_campy$genes_campy))
+
+ecoli_campy_df[paste0(genes_ecoli_campy)] <- do.call(cbind, as.list(0))
+
+
+anti_ecoli_campy_df <- ecoli_campy_df[, c(12, 26:38)]
+
+for (i in 2:ncol(anti_ecoli_campy_df)) {
+  
+    drug_test <- c(colnames(anti_ecoli_campy_df[-c(5, 6, 8, 9, 13)]),
+                "tet\\(A\\)=COMPLETE",
+                "aph\\(3''\\)-Ib=COMPLETE",
+                "aph\\(6\\)-Id=COMPLETE",
+                "tet\\(O\\)=COMPLETE",
+                "aph\\(3'\\)-IIIa=COMPLETE")
+    drug <- drug_test[i]
+    
+  for (j in 1:nrow(anti_ecoli_campy_df)) {
+
+  
+  ecoli_campy_df[j, drug] <- ifelse(grepl(drug, anti_ecoli_campy_df[j, ]$amr_genotypes), 1, 0)
+  
+  }
+  
+}
+
+ecoli_campy_df <- ecoli_campy_df[, -c(29:30, 32:33, 37)]
+
+
+
+
+```
+
+
+
+
+
+
+
+
+
+
+\textbf{Justification for why this plan will answer your question}
+
+The ultimate goal is to build a model or a series of models, rather, that will, out of the antibiotics that we chose to consider, recommend to new isolates the antibiotic predicted with the highest level of confidence that that new isolate will show susceptibility to. Approaching this task with random forest classifier model is appropriate as we want to predict either a susceptible or resistant response for our isolates on each of the antibiotics and we can assess our levels of confidence as random forest implementation in R doesn't only return the predicted class of each observation, but also the probabilities associated with those predictions. Additionally, random forests is a type of non-parametric supervised machine learning model so we don't have to be held to stringent assumptions of our data like we would with parametric techniques like logistic regression. We are also interested generally in the kind of patterns that we can extract from our current data, especially when it comes to the most pertinent covariates in the classification processes. We want to find which antimicrobial genes as well as which baseline covaraites are most helpful in deciding how to treat cases of foodborne illness in Salmonella, E.coli, and Campylobacter. What's especially handy about random forests is its emphasis on feature selection. 
+
+The interpretability of feature selection is also very easy with random forests. As feature selection is a built in mechanism on random forests, the output of our models are able to provide a simple measure of how integral each variable of interest was to classification. This process will be paramount in extracting tangible insights about associations between drug susceptibility and resistance, and supporting information logged in the NCBI database about each new case. Even when we want to target how time plays a roll in predicting drug response, it's easy to interpret the affect of our time variable in the grand scheme of the classification algorithm. 
+
+
+The biggest limitation of this model is that it assumes our data are complete and non-missing. While we can impute these missing values in a pretty straight-forward process, when we have larger amounts of missingness, these imputed values become less and less reliable. 
+
+
+\textbf{Initial implementation(s) - do a brief use case as a sanity check to make sure you understand how to use the methods and to catch any potential problems.}
+
+
+Recall that in order to address our question of interest, we plan to utilize the `randomforest` function from the `randomforest` package in R.
+
+We'll demonstrate the utilities of this function on our data with a simple use case. For this example, we used our dataset for Salmonella enterica isolates.
+
+```{r}
+
+tetra_test <- salmonella_df %>%
+  mutate(tetracycline = ifelse(grepl("tetracycline", suscept_comb), 1,
+ifelse(grepl("tetracycline", resist_comb), 0, NA))) %>%
+  select(-c(strain, isolate, location, serovar,
+            serotype, resist_comb, suscept_comb,
+            resist, suscept, isolation_source,
+            amr_genotypes, snp_cluster,
+            antigen_formula)) %>%
+  filter(!is.na(tetracycline)) %>%
+  select(-organism_group)
+
+cols <- c("isolation_type",
+          "serovar_new", "country",
+          "isolation_source_new",
+          "antigen_formula_new",
+         colnames(tetra_test)[12:24])
+
+
+tetra_test[cols] <- lapply(tetra_test[cols], factor) 
+
+
+
+```
+
+
+```{r}
+# clean variable names
+tetra_test <- tetra_test %>%
+  clean_names()
+
+```
+
+
+```{r}
+
+#amelia(tetra_test, m=1, parallel = "multicore",noms=cols,
+ #      idvars = "isolate")
+
+#sapply(lapply(tetra_test, unique), length)
+
+```
+
+
+
+
+```{r}
+
+#boruta <- Boruta(tetracycline ~ ., data = tetra_test, doTrace = 2, maxRuns = 500)
+
+```
+
+
+After ensuring that all of the categorical variables in our data are expressed as factors, we fit a model with drug susceptibility to the antibiotic tetracycline as our outcome of interest (a value of 1 for susceptible and a value of 0 for resistant), and the variables collection date, isolation type, minimum SNP distance to an isolate of the same isolation type, minimum SNP distance to an isolate of a different isolation type, serovar, country, isolation source, number of isolates "close" to that isolate (being close to another isolate being defined as having a minimum SNP distance less than or equal to 7 to an isolate of either the same or different isolation type),  antigen formula, average similarity scores between isolates within the same SNP cluster of antibiotics that isolates show resistance and susceptibility to, and finally a set of 12 binary variables indicating the genetic presence of 12 of the most common antimicrobial resistant genes in Salmonella. Note that our outcome of interest, susceptibility on tetracycline is roughly balanced with 51.3% of the isolates showing resistance to tetracycline, and the remaining 48.8% showing susceptibility.
+
+
+```{r}
+
+#prop.table(table(tetra_test$tetracycline))
+
+```
+
+
+```{r, echo = TRUE}
+
+set.seed(1)
+
+rand_forest_test <- randomForest(tetracycline ~.,
+                    data = tetra_test,
+                     na.action = na.roughfix)
+
+```
+
+
+```{r}
+
+# WITHOUT ANTIMICROBIAL RESIS GENES
+
+# set.seed(1)
+# 
+# no_gene_tetra <- tetra_test[, c(1:11, 24)]
+# 
+# rand_forest_test2 <- randomForest(tetracycline ~.,
+#                     data = no_gene_tetra,
+#                      na.action = na.roughfix)
+
+```
+
+
+
+```{r}
+
+#rand_forest_test$type
+#rand_forest_test$ntree
+#rand_forest_test$mtry
+
+```
+
+The output of the random forest command gives the type of random forest, which is classification in this case as our outcome is binary, the number of trees that were grown as a part of the process which in this case was the default 500 trees, and the number of variables tried at each split, which was 4, i.e. the value found by taking the largest integer value less than or equal to, or the floor value of the square root of the number of columns in the dataset (floor of the $\sqrt{24}$). 
+
+
+The random forest function also provides a measure of the out of bag estimate of the error rate. While this is reported as 2.44% in the model output, we can also plot the out of bag error against the number of trees as well as plot this by class (resistant (0) vs. susceptible (1)).
+
+
+```{r fig-tetra-obb, fig.cap= "Out of Bag Error Plot for Tetracycline RF"}
+
+plot(rand_forest_test,
+     main = "Out of Bag Error RF")
+legend("topright", c("avg. OOB", "resist.", "suscept."),
+       cex = 0.6,
+       fill=1:ncol(rand_forest_test$err.rate))
+
+```
+
+
+```{r}
+
+# WITHOUT GENES
+
+# plot(rand_forest_test2,
+  #   main = "Out of Bag Error RF")
+# legend("topright", c("avg. OOB", "resist.", "suscept."),
+  #     cex = 0.6,
+  #     fill=1:ncol(rand_forest_test2$err.rate))
+
+
+
+```
+
+Notably, \textbf{Figure 1} shows that our model is stronger at predicting the tetracycline susceptibility (1) class than the resistant (0) class.
+
+We also can extract the statistics of interest based on the confusion matrix outputted from predicted classification. We just collected this on our full dataset for now just for demonstration purposes (\textbf{Table 3}). 
+
+```{r}
+
+
+predicted_vals <- rand_forest_test$predicted
+
+
+conf_matrix <- confusionMatrix(tetra_test$tetracycline,
+                               predicted_vals,
+                               positive = '1')
+
+
+roc_pred <- prediction(predictions = rand_forest_test$votes[, "1"] , 
+            labels = tetra_test$tetracycline)
+
+perf <- performance(roc_pred, "tpr", "fpr")
+
+
+auc_ROCR <- performance(roc_pred, measure = "auc")
+
+
+acc <- as.numeric(conf_matrix$overall['Accuracy'])
+sens <- as.numeric(conf_matrix$byClass['Sensitivity'])
+spec <- as.numeric(conf_matrix$byClass['Specificity'])
+pospred <- as.numeric(conf_matrix$byClass['Pos Pred Value'])
+negpred <- as.numeric(conf_matrix$byClass['Neg Pred Value'])
+auc_ROCR <- auc_ROCR@y.values[[1]]
+
+
+```
+
+
+
+
+```{r}
+
+# 
+# predicted_vals2 <- rand_forest_test2$predicted
+# 
+# 
+# conf_matrix2 <- confusionMatrix(no_gene_tetra$tetracycline,
+#                                predicted_vals,
+#                                positive = '1')
+# 
+# 
+# roc_pred2 <- prediction(predictions = rand_forest_test2$votes[, "1"] , 
+#             labels = no_gene_tetra$tetracycline)
+# 
+# perf2 <- performance(roc_pred2, "tpr", "fpr")
+# 
+# 
+# auc_ROCR2 <- performance(roc_pred2, measure = "auc")
+# 
+# 
+# acc2 <- as.numeric(conf_matrix2$overall['Accuracy'])
+# sens2 <- as.numeric(conf_matrix2$byClass['Sensitivity'])
+# spec2 <- as.numeric(conf_matrix2$byClass['Specificity'])
+# pospred2 <- as.numeric(conf_matrix2$byClass['Pos Pred Value'])
+# negpred2 <- as.numeric(conf_matrix2$byClass['Neg Pred Value'])
+# auc_ROCR2 <- auc_ROCR2@y.values[[1]]
+
+
+```
+
+
+
+
+
+```{r}
+
+conf_df <- as.data.frame(conf_matrix$table) %>%
+  pivot_wider(names_from = Prediction,
+              values_from = Freq) 
+
+```
+
+
+```{r tabconf}
+
+conf_gt <- gt(conf_df,
+   caption = "Confusion Matrix for Drug Response on Tetracycline") %>% 
+  tab_spanner(
+    label = "Predicted",
+    columns = c(`0`, `1`)
+  )
+
+```
+
+
+
+```{r}
+
+metric_tbl <- data.frame("Metric" = c("Accuracy", "Sensitivity", "Specificity",
+                      "Pos Pred Value", "Neg Pred Value", 
+                      "AUC"),
+           "Value" = c(acc, sens, spec, pospred, negpred,
+                       auc_ROCR))
+
+```
+
+
+```{r}
+
+# WITHOUT GENES
+
+# metric_tbl2 <- data.frame("Metric" = c("Accuracy", "Sensitivity", "Specificity",
+#                       "Pos Pred Value", "Neg Pred Value", 
+#                       "AUC"),
+#            "Value" = c(acc2, sens2, spec2, pospred2, negpred2,
+#                        auc_ROCR2))
+
+
+```
+
+
+
+
+```{r tab-perf-metr}
+
+kable(metric_tbl, 
+      caption = "Tetracycline RF Performance Metrics") %>%
+  kable_styling()
+
+```
+
+
+
+```{r tab-perf-metr2}
+
+# kable(metric_tbl2, 
+#       caption = "Tetracycline RF Performance Metrics") %>%
+#   kable_styling()
+
+```
+
+We will also use importance measures to extract information about the most important predictors in these cases of predicting drug response. Ultimately, we'll be comparing the results and important predictors of multiple models with susceptibility/resistance responses to each of the antibioitics of interest, in order to recommend antibiotics that we predict new isolates will show susceptibility to. In this simple case though, we show that we can extract the most important variables integral to the random forest classification of our data (Figure 2).
+
+```{r}
+
+
+
+var_imp_df5 <- cbind(varImp(rand_forest_test), var = rownames(varImp(rand_forest_test))) %>%
+  arrange(desc(Overall)) %>%
+  head(5)
+
+```
+
+
+```{r}
+
+# var_imp_df10_2 <- cbind(varImp(rand_forest_test2), var = rownames(varImp(rand_forest_test2))) %>%
+#   arrange(desc(Overall)) %>%
+#   head(10)
+
+```
+
+
+```{r fig-imp, fig.cap= "Top 5 Most Important Covariates"}
+
+ggplot(data = var_imp_df5,
+       aes(x = fct_reorder(var, Overall), y = Overall)) + 
+  geom_col(fill = "light blue", col = "white") +
+  coord_flip() +
+  labs(x = "", y = "Importance") +
+  theme_bw()
+
+
+```
+
+
+```{r}
+
+# ggplot(data = var_imp_df10_2,
+#        aes(x = fct_reorder(var, Overall), y = Overall)) + 
+#   geom_col(fill = "light blue", col = "white") +
+#   coord_flip() +
+#   labs(x = "", y = "Importance") +
+#   theme_bw()
+
+
+```
+
+
+

@@ -2,8 +2,8 @@
     "sortOrder": [
         {
             "columnIndex": 2,
-            "ascending": false
+            "ascending": true
         }
     ],
-    "path": "~/GitHub/PHP2550-Final-Project/data/table_data"
+    "path": "~/GitHub/PHP2550-Final-Project/data"
 }
