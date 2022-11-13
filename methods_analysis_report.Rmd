@@ -11,6 +11,7 @@ knitr::opts_chunk$set(message=FALSE, warning=FALSE, error=FALSE, echo = FALSE, f
 library(readr)
 library(tidyverse)
 library(randomForest)
+library(regclass)
 library(Boruta)
 library(Amelia)
 library(AUC)
@@ -201,6 +202,10 @@ Recall that in order to address our question of interest, we plan to utilize the
 
 We'll demonstrate the utilities of this function on our data with a simple use case. For this example, we used our dataset for Salmonella enterica isolates.
 
+However, before we implement random forest, we'll first utilize the `Boruta` function from the `Boruta` package in order to perform variable selection. In action, the Boruta algorithm first adds randomness to the dataset of interest by creating shuffled copies of all of the features up for consideration. These new shuffled copies are called shadow features. Next, the function applies random forest on the data and evaluates the importance of each of the features in the classification process. With each iteration of the classifier, the Boruta algorithm checks if the un-shuffled, original feature has a higher importance than the most important of its shuffled shadow features. If an original covariate is not deemed more important to classification than the best of that covariate's associated shadow features, then it is deemed unimportant and removed as a variable worth keeping in the modeling process. The Boruta algorithm stops when either all features are either confirmed or denied as being important, or alternatively when the maximum number of a specified number of random forest runs is reached. 
+
+
+
 ```{r}
 
 tetra_test <- salmonella_df %>%
@@ -221,9 +226,6 @@ cols <- c("isolation_type",
          colnames(tetra_test)[12:24])
 
 
-tetra_test[cols] <- lapply(tetra_test[cols], factor) 
-
-
 
 ```
 
@@ -236,26 +238,100 @@ tetra_test <- tetra_test %>%
 ```
 
 
+A hurdle of utilizing this algorithm is that it only accepts non-missing data. As our current data currently obtains missing values, for the sake of this demonstration, we'll impute this missing values by utilizing the `amelia` function from the `Amelia` package in R.
+
+"Amelia takes m bootstrap samples and applies the EMB (or expectation-maximization with bootstrapping) algorithm to each sample. The m estimates of mean and variances will be different. Finally, the first set of estimates are used to impute first set of missing values using regression, then a second set of estimates are used for second set and so on."
+
 ```{r}
 
-#amelia(tetra_test, m=1, parallel = "multicore",noms=cols,
- #      idvars = "isolate")
+nom_cols <- c("isolation_type", "serovar_new", "country", "isolation_source_new",
+              "antigen_formula_new", "mds_a_complete", "mds_b_complete",
+              "sul2_complete", "sul1_complete", "bla_tem_1_complete",
+"aad_a1_complete", "fos_a7_complete", "bla_cmy_2_complete",   
+"tet_a_complete", "aph_3_ib_complete", "aph_6_id_complete",   
+"tet_b_complete", "tetracycline")
 
-#sapply(lapply(tetra_test, unique), length)
+#tetra_test <- tetra_test[, -11]
+#tetra_test_use <- tetra_test[, c(1:7, 9:10)]
+
+```
+
+For now, we'll demonstrate the utilities of Amelia by specifying country as our cross-sectional units and collection date/year as our representation of time. The idea is that these covariates will help to provide more accurate predictions for the missing values.
+
+We first ensure that all of the categorical variables in our data are expressed as factors.
+
+```{r}
+
+fact_cols <- c(cols[1:5], colnames(tetra_test)[12:ncol(tetra_test)])
+
+tetra_test[fact_cols] <- lapply(tetra_test[fact_cols], factor)
+
+
 
 ```
 
 
 
+The imputation algorithm considered all 24 of the variables in our dataset and worked to fill in missing values. Our use of this imputation algorithm will be more heavily scrutinized for the actual implementation of our methods on our data, but for now, we will impute values for any column without much criticism towards the values that are actually being imputed.
 
-```{r}
+We will only generate 1 imputed dataset for the time being.
 
-#boruta <- Boruta(tetracycline ~ ., data = tetra_test, doTrace = 2, maxRuns = 500)
+```{r, echo=TRUE, eval=FALSE}
+
+imputed_dat <- amelia(tetra_test_use, m=1,
+noms=c("isolation_type", "isolation_source_new",
+      "serovar_new",
+       "antigen_formula_new"),
+ts = "collection_date",
+cs = "country",
+p2s = 2)
 
 ```
 
 
-After ensuring that all of the categorical variables in our data are expressed as factors, we fit a model with drug susceptibility to the antibiotic tetracycline as our outcome of interest (a value of 1 for susceptible and a value of 0 for resistant), and the variables collection date, isolation type, minimum SNP distance to an isolate of the same isolation type, minimum SNP distance to an isolate of a different isolation type, serovar, country, isolation source, number of isolates "close" to that isolate (being close to another isolate being defined as having a minimum SNP distance less than or equal to 7 to an isolate of either the same or different isolation type),  antigen formula, average similarity scores between isolates within the same SNP cluster of antibiotics that isolates show resistance and susceptibility to, and finally a set of 12 binary variables indicating the genetic presence of 12 of the most common antimicrobial resistant genes in Salmonella. Note that our outcome of interest, susceptibility on tetracycline is roughly balanced with 51.3% of the isolates showing resistance to tetracycline, and the remaining 48.8% showing susceptibility.
+
+```{r}
+
+
+#write.amelia(imputed_dat, file.stem = "data/imputed_tetra_test_df.csv")
+
+
+#imp_data <- cbind(imputed_dat$imputations[[1]],
+ #         tetra_test[, 11:ncol(tetra_test)])
+
+#write_csv(imp_data, #"data/imputed_tetra_test_df.csv")
+
+imp_data <- read_csv("data/imputed_tetra_test_df.csv")
+
+
+```
+
+
+
+After imputing our data, we then move on to the `Boruta` feature selection process.
+
+
+
+```{r, echo=TRUE, eval=FALSE}
+
+boruta <- Boruta(tetracycline ~ ., 
+data = imp_data[complete.cases(imp_data),], doTrace = 2, maxRuns = 500)
+
+```
+
+
+```{r}
+
+#print(boruta)
+
+```
+
+From 11 iterations, the Boruta algorithm decided that none of the predictors of consideration were unimportant. Now, we move on to the implementation of the classification algorithm.
+
+
+We fit a model with drug susceptibility to the antibiotic tetracycline as our outcome of interest (a value of 1 for susceptible and a value of 0 for resistant), and the variables collection date, isolation type, minimum SNP distance to an isolate of the same isolation type, minimum SNP distance to an isolate of a different isolation type, serovar, country, isolation source, number of isolates "close" to that isolate (being close to another isolate being defined as having a minimum SNP distance less than or equal to 7 to an isolate of either the same or different isolation type),  antigen formula, average similarity scores between isolates within the same SNP cluster of antibiotics that isolates show resistance and susceptibility to, and finally a set of 12 binary variables indicating the genetic presence of 12 of the most common antimicrobial resistant genes in Salmonella.
+
+Note that our outcome of interest, susceptibility on tetracycline is roughly balanced with 51.3% of the isolates showing resistance to tetracycline, and the remaining 48.8% showing susceptibility.
 
 
 ```{r}
@@ -517,4 +593,10 @@ ggplot(data = var_imp_df5,
 ```
 
 
+```{r}
+
+#write_csv(salmonella_df, "data/salmonella_df.csv")
+#write_csv(ecoli_campy_df, "data/ecoli_campy_df.csv")
+
+```
 
