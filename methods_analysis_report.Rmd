@@ -267,8 +267,6 @@ nom_cols <- c("isolation_type", "serovar_new", "country", "isolation_source_new"
 "tet_a_complete", "aph_3_ib_complete", "aph_6_id_complete",   
 "tet_b_complete", "tetracycline")
 
-#tetra_test <- tetra_test[, -11]
-#tetra_test_use <- tetra_test[, c(1:7, 9:10)]
 
 ```
 
@@ -328,12 +326,6 @@ boruta <- Boruta(tetracycline ~ ., data = imp_data, doTrace = 2, maxRuns = 500)
 ```
 
 
-```{r}
-
-#print(boruta)
-
-```
-
 
 From 12 iterations, the Boruta algorithm decided that none of the 22 predictors of consideration were unimportant, so we used them all in the example classification.
 
@@ -361,24 +353,6 @@ set.seed(1)
 rand_forest_test <- randomForest(tetracycline ~., data = imp_data)
 
 ```
-
-
-```{r}
-
-# WITHOUT ANTIMICROBIAL RESIS GENES
-
-# set.seed(1)
-# 
-# no_gene_tetra <- tetra_test[, c(1:11, 24)]
-# 
-# rand_forest_test2 <- randomForest(tetracycline ~.,
-#                     data = no_gene_tetra,
-#                      na.action = na.roughfix)
-
-```
-
-
-
 
 
 The output of the random forest command gives the number of trees that were grown as a part of the process which in this case was the default 500 trees, and the number of variables tried at each split, which was 4, i.e. the value found by taking the largest integer value less than or equal to, otherwise known as the \textit{floor} value of the square root of the number of columns in the dataset (floor of the $\sqrt{24}$). We will tune these values for the official study.
@@ -429,20 +403,6 @@ abline(a = 0, b = 1)
 ```
 
 
-```{r}
-
-# WITHOUT GENES
-
-# plot(rand_forest_test2,
-  #   main = "Out of Bag Error RF")
-# legend("topright", c("avg. OOB", "resist.", "suscept."),
-  #     cex = 0.6,
-  #     fill=1:ncol(rand_forest_test2$err.rate))
-
-
-
-```
-
 
 Notably, \textbf{Figure 1 (left)} shows that our model is stronger at predicting the tetracycline susceptibility class than the resistant class, a plot that can be supplemented with other performance related visuals like ROC curve which we plot alongside the out of bag error plot \textbf{Figure 1 (right)}.
 
@@ -457,39 +417,6 @@ acc <- as.numeric(conf_matrix$overall['Accuracy'])
 sens <- as.numeric(conf_matrix$byClass['Sensitivity'])
 spec <- as.numeric(conf_matrix$byClass['Specificity'])
 auc_ROCR <- auc_ROCR@y.values[[1]]
-
-
-```
-
-
-
-
-```{r}
-
-# 
-# predicted_vals2 <- rand_forest_test2$predicted
-# 
-# 
-# conf_matrix2 <- confusionMatrix(no_gene_tetra$tetracycline,
-#                                predicted_vals,
-#                                positive = '1')
-# 
-# 
-# roc_pred2 <- prediction(predictions = rand_forest_test2$votes[, "1"] , 
-#             labels = no_gene_tetra$tetracycline)
-# 
-# perf2 <- performance(roc_pred2, "tpr", "fpr")
-# 
-# 
-# auc_ROCR2 <- performance(roc_pred2, measure = "auc")
-# 
-# 
-# acc2 <- as.numeric(conf_matrix2$overall['Accuracy'])
-# sens2 <- as.numeric(conf_matrix2$byClass['Sensitivity'])
-# spec2 <- as.numeric(conf_matrix2$byClass['Specificity'])
-# pospred2 <- as.numeric(conf_matrix2$byClass['Pos Pred Value'])
-# negpred2 <- as.numeric(conf_matrix2$byClass['Neg Pred Value'])
-# auc_ROCR2 <- auc_ROCR2@y.values[[1]]
 
 
 ```
@@ -529,18 +456,6 @@ metric_tbl <- data.frame("Metric" = c("Accuracy", "Sensitivity", "Specificity",
 ```
 
 
-```{r}
-
-# WITHOUT GENES
-
-# metric_tbl2 <- data.frame("Metric" = c("Accuracy", "Sensitivity", "Specificity",
-#                       "Pos Pred Value", "Neg Pred Value", 
-#                       "AUC"),
-#            "Value" = c(acc2, sens2, spec2, pospred2, negpred2,
-#                        auc_ROCR2))
-
-
-```
 
 
 
@@ -553,15 +468,6 @@ kable(metric_tbl,
 
 ```
 
-
-
-```{r tab-perf-metr2}
-
-# kable(metric_tbl2, 
-#       caption = "Tetracycline RF Performance Metrics") %>%
-#   kable_styling()
-
-```
 
 
 We will also extract information about the most important predictors. Ultimately, we'll be comparing the results and important predictors of multiple models with susceptibility/resistance responses to each of the antibiotics of interest, in order to recommend antibiotics that we predict new isolates will show susceptibility to. In this simple case though, we show what a simple plot of this comparison would look like (\textbf{Figure 2}).
@@ -577,14 +483,6 @@ var_imp_df5 <- cbind(varImp(rand_forest_test), var = rownames(varImp(rand_forest
 ```
 
 
-```{r}
-
-# var_imp_df10_2 <- cbind(varImp(rand_forest_test2), var = rownames(varImp(rand_forest_test2))) %>%
-#   arrange(desc(Overall)) %>%
-#   head(10)
-
-```
-
 
 ```{r fig-imp, fig.cap= "Top 5 Most Important Covariates", fig.width= 4, fig.height=2}
 
@@ -598,18 +496,6 @@ ggplot(data = var_imp_df5,
 
 ```
 
-
-```{r}
-
-# ggplot(data = var_imp_df10_2,
-#        aes(x = fct_reorder(var, Overall), y = Overall)) + 
-#   geom_col(fill = "light blue", col = "white") +
-#   coord_flip() +
-#   labs(x = "", y = "Importance") +
-#   theme_bw()
-
-
-```
 
 
 ```{r}
