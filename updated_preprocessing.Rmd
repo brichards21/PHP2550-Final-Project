@@ -1,0 +1,407 @@
+---
+title: "Final_project_preprocessing"
+author: "Yanru Liao"
+date: "2022-11-12"
+output: html_document
+---
+
+#### Pre-processing
+```{r}
+library(tidyverse)
+convert_drug <- function(df, col, prefix) {
+    #' @param df dataframe
+    #' @param col column need to convert
+    #' @param prefix the prefix of characteristic for the same object
+    #' @return return the wider dataframe of each unique drug with its value as one column
+    
+    example_df <- df
+    Names_col_except_nas = example_df[[col]][!is.na(example_df[[col]])]
+    all_Names = str_c(Names_col_except_nas, collapse = ", ")  # concate all strings
+    unique_Names = unique(str_split(all_Names, pattern = ", ")[[1]])
+    for (Name in unique_Names) {
+      example_df[[str_c(prefix, Name)]] = case_when(is.na(example_df[[col]]) ~ NA,
+                                                    TRUE ~ str_detect(example_df[[col]], Name))
+    }
+    return(example_df)
+}
+```
+
+
+```{r}
+read.all <- function() {
+ isolate.df <- read.csv(
+      "C:/Users/78428/OneDrive/Desktop/R/PHP2550-Final-Project/data/isolates_df.csv"
+    )
+  isolate.df <- isolate.df %>%
+    filter(! (is.na((resist_comb)) & is.na((suscept_comb)))) #delete obs has both NAs 
+  
+  example_df <-
+    convert_drug(isolate.df, col = "resist_comb", prefix = "resist_")
+
+  example_df <-
+    convert_drug(example_df, col = "suscept_comb", prefix = "suscept_")
+  
+  example_df <- example_df %>% select(isolate, ends_with(
+    c(
+      "tetracycline",
+      "streptomycin",
+      "sulfisoxazole",
+      "ampicillin",
+      "meropenem",
+      "ciprofloxacin",
+      "tetracycline",
+      "ampicillin",
+      "gentamicin",
+      "erythromycin",
+      "florfenicol",
+      "azithromycin",
+      "clindamycin",
+      "nalidixic acid"
+    )
+  )) 
+  
+  example_df[,2:ncol(example_df)] <- lapply(example_df[,2:ncol(example_df)], as.integer)
+  
+  isolate.df <- isolate.df %>% left_join(example_df , by = "isolate")
+  
+  isolate.df  <-
+    isolate.df  %>% rename(florfenicol = suscept_florfenicol) #florfenicol only has suscept record
+  
+  target <- c(
+    "tetracycline",
+    "streptomycin",
+    "sulfisoxazole",
+    "ampicillin",
+    "meropenem",
+    "ciprofloxacin",
+    "tetracycline",
+    "ampicillin",
+    "gentamicin",
+    "erythromycin",
+    "azithromycin",
+    "clindamycin",
+    "nalidixic acid"
+  )
+  for (col  in target)
+    isolate.df[[col]] = case_when (
+      isolate.df[[str_c("resist_", col)]] == 0 |
+        isolate.df[[str_c("suscept_", col)]]  == 1 ~ 1,
+      
+      isolate.df[[str_c("resist_", col)]]  == 1 |
+        isolate.df[[str_c("suscept_", col)]]  == 0 ~ 0,
+      
+      TRUE ~ NA_real_
+    )
+  
+  isolate.df  <-
+    isolate.df[, -c(16:20, 26:41, 43:48)] #delete all resist and suscept columns
+  return(isolate.df)
+}
+read.all()
+```
+
+
+```{r}
+read.salmonella <- function() {
+  isolate.df <-
+    read.csv(
+      "C:/Users/78428/OneDrive/Desktop/R/PHP2550-Final-Project/data/salmonella_df.csv"
+    )
+  isolate.df <- isolate.df %>%
+    filter(!(is.na((resist_comb)) &
+               is.na((suscept_comb)))) #delete obs has both NAs
+  
+  example_df <-
+    convert_drug(isolate.df, col = "resist_comb", prefix = "resist_")
+  
+  example_df <-
+    convert_drug(example_df, col = "suscept_comb", prefix = "suscept_")
+  
+  example_df <- example_df %>% select(isolate, ends_with(
+    c(
+      "tetracycline",
+      "streptomycin",
+      "sulfisoxazole",
+      "ampicillin"
+    )
+  ))
+  
+  example_df[, 2:ncol(example_df)] <-
+    lapply(example_df[, 2:ncol(example_df)], as.integer)
+  
+  isolate.df <-
+    isolate.df %>% left_join(example_df , by = "isolate")
+  
+  target <- c("tetracycline",
+              "streptomycin",
+              "sulfisoxazole",
+              "ampicillin")
+  for (col  in target)
+    isolate.df[[col]] = case_when (
+      isolate.df[[str_c("resist_", col)]] == 0 |
+        isolate.df[[str_c("suscept_", col)]]  == 1 ~ 1,
+      
+      isolate.df[[str_c("resist_", col)]]  == 1 |
+        isolate.df[[str_c("suscept_", col)]]  == 0 ~ 0,
+      
+      TRUE ~ NA_real_
+    )
+  isolate.df <- isolate.df [, -c(16:19, 38:45)]
+  return(isolate.df)
+}
+read.salmonella()
+```
+
+
+```{r}
+read.ecoli_campy <- function(){
+  isolate.df <-
+    read.csv(
+      "C:/Users/78428/OneDrive/Desktop/R/PHP2550-Final-Project/data/ecoli_campy_df.csv"
+    )
+  isolate.df <- isolate.df %>%
+    filter(!(is.na((resist_comb)) &
+               is.na((suscept_comb)))) #delete obs has both NAs
+  
+  example_df <-
+    convert_drug(isolate.df, col = "resist_comb", prefix = "resist_")
+  
+  example_df <-
+    convert_drug(example_df, col = "suscept_comb", prefix = "suscept_")
+  
+  example_df <- example_df %>% select(isolate, ends_with(
+    c(
+      "meropenem",
+      "ciprofloxacin",
+      "tetracycline",
+      "ampicillin",
+      "gentamicin",
+      "erythromycin",
+      "florfenicol",
+      "azithromycin",
+      "clindamycin",
+      "nalidixic acid",
+      "ampicillin",
+      "tetracycline"
+    )
+  ))
+  
+  example_df[, 2:ncol(example_df)] <-
+    lapply(example_df[, 2:ncol(example_df)], as.integer)
+  
+  isolate.df <-
+    isolate.df %>% left_join(example_df , by = "isolate")
+  
+  isolate.df  <-
+    isolate.df  %>% rename(florfenicol = suscept_florfenicol) #florfenicol only has suscept record
+  
+  target <- c("meropenem",
+      "ciprofloxacin",
+      "tetracycline",
+      "ampicillin",
+      "gentamicin",
+      "erythromycin",
+      "azithromycin",
+      "clindamycin",
+      "nalidixic acid",
+      "ampicillin",
+      "tetracycline")
+  
+  for (col  in target)
+    isolate.df[[col]] = case_when (
+      isolate.df[[str_c("resist_", col)]] == 0 |
+        isolate.df[[str_c("suscept_", col)]]  == 1 ~ 1,
+      
+      isolate.df[[str_c("resist_", col)]]  == 1 |
+        isolate.df[[str_c("suscept_", col)]]  == 0 ~ 0,
+      
+      TRUE ~ NA_real_
+    )
+  isolate.df <- isolate.df [, -c(16:19, 39:57)]
+  return(isolate.df)
+}
+read.ecoli_campy()
+```
+
+```{r}
+sal <- read.salmonella()
+ecoli_campy <- read.ecoli_campy()
+```
+
+#### Missing values
+```{r}
+# Check missing values 
+apply(sal, 2, function(x){return(sum(is.na(x))/length(x))})
+```
+
+```{r}
+sal[,c("min_same","min_diff","num_close","suscept_sim","resist_sim")] <- lapply(sal[,c("min_same","min_diff","num_close","suscept_sim","resist_sim")], as.integer) 
+sal[sapply(sal, is.character)] <- lapply(sal[sapply(sal, is.character)], 
+                                                           factor, exclude=NULL)
+sal[sapply(sal, is.factor)] <- lapply(sal[sapply(sal, is.factor)], fct_explicit_na)
+```
+
+
+```{r}
+#handle continous variable missing value
+sal_cont <- sal[!sapply(sal, is.factor)]
+#which(apply(sal, 2, function(x){return(sum(is.na(x))/length(x))}) >0.8)
+sal_cont <- sal_cont[, names(sal_cont) !="resist_sim"] 
+sal_cont[, ! names(sal_cont) %in% c("collection_date","min_same","min_diff","num_close","suscept_sim")] <- lapply(sal_cont[, !names(sal_cont) %in% c("collection_date","min_same","min_diff","num_close","suscept_sim")], as.factor)
+```
+
+```{r}
+library(mice)
+tempData <- mice(sal_cont, m=5, maxit = 5, method = "pmm")
+imputed1 <- complete(tempData,1)
+imputed2 <- complete(tempData,2)
+imputed3 <- complete(tempData,3)
+imputed4 <- complete(tempData,4)
+imputed5 <- complete(tempData,5)
+```
+
+
+```{r}
+sal <- sal[,! names(sal) %in% c("resist_sim","serovar","antigen_formula","isolation_source")]
+
+sal_imputed1 <-sal
+for (col in names(imputed1)){
+  sal_imputed1[[col]] <-imputed1[[col]]
+}
+
+sal_imputed2 <- sal
+for (col in names(imputed2)){
+  sal_imputed2[[col]] <-imputed2[[col]]
+}
+
+sal_imputed3 <- sal
+for (col in names(imputed3)){
+  sal_imputed3[[col]] <-imputed3[[col]]
+}
+
+
+sal_imputed4 <- sal
+for (col in names(imputed4)){
+  sal_imputed4[[col]] <-imputed4[[col]]
+}
+
+sal_imputed5 <-sal
+for (col in names(imputed5)){
+  sal_imputed5[[col]] <-imputed5[[col]]
+}
+
+```
+
+
+```{r}
+write.csv(sal_imputed1,"C:/Users/78428/OneDrive/Desktop/R/PHP2550-Final-Project/data/sal_imputed1.csv", row.names = FALSE)
+write.csv(sal_imputed2,"C:/Users/78428/OneDrive/Desktop/R/PHP2550-Final-Project/data/sal_imputed2.csv", row.names = FALSE)
+write.csv(sal_imputed3,"C:/Users/78428/OneDrive/Desktop/R/PHP2550-Final-Project/data/sal_imputed3.csv", row.names = FALSE)
+write.csv(sal_imputed4,"C:/Users/78428/OneDrive/Desktop/R/PHP2550-Final-Project/data/sal_imputed4.csv", row.names = FALSE)
+write.csv(sal_imputed5,"C:/Users/78428/OneDrive/Desktop/R/PHP2550-Final-Project/data/sal_imputed5.csv", row.names = FALSE)
+```
+
+
+```{r}
+#missng values
+process_miss <- function(data) {
+  data[] <- lapply(data, as.character)
+  data[, c("min_same",
+           "min_diff",
+           "num_close",
+           "suscept_sim",
+           "resist_sim")] <-
+    lapply(data[, c("min_same",
+                    "min_diff",
+                    "num_close",
+                    "suscept_sim",
+                    "resist_sim")], as.integer)
+  data[sapply(data, is.character)] <-
+    lapply(data[sapply(data, is.character)],
+           as.factor)
+  data[sapply(data, is.factor)] <-
+    lapply(data[sapply(data, is.factor)], fct_explicit_na)
+  
+  #handle continous variable missing value
+  data_cont <- data[!sapply(data, is.factor)]
+  #which(apply(data, 2, function(x){return(sum(is.na(x))/length(x))}) >0.8)
+  data_cont <- data_cont[, names(data_cont) != "resist_sim"]
+  data_cont[,!names(data_cont) %in% c("collection_date",
+                                      "min_same",
+                                      "min_diff",
+                                      "num_close",
+                                      "suscept_sim")] <-
+    lapply(data_cont[,!names(data_cont) %in% c("collection_date",
+                                               "min_same",
+                                               "min_diff",
+                                               "num_close",
+                                               "suscept_sim")], as.factor)
+  
+  tempData <- mice(data_cont,
+                   m = 5,
+                   maxit = 5,
+                   method = "pmm")
+  imputed1 <- complete(tempData, 1)
+  imputed2 <- complete(tempData, 2)
+  imputed3 <- complete(tempData, 3)
+  imputed4 <- complete(tempData, 4)
+  imputed5 <- complete(tempData, 5)
+  
+  data <-
+    data[, !names(data) %in% c("resist_sim",
+                               "serovar",
+                               "antigen_formula",
+                               "isolation_source","snp_cluster","serotype","serovar_new")]
+  
+  data_imputed1 <- data
+  for (col in names(imputed1)) {
+    data_imputed1[[col]] <- imputed1[[col]]
+  }
+  
+  data_imputed2 <- data
+  for (col in names(imputed2)) {
+    data_imputed2[[col]] <- imputed2[[col]]
+  }
+  
+  data_imputed3 <- data
+  for (col in names(imputed3)) {
+    data_imputed3[[col]] <- imputed3[[col]]
+  }
+  
+  
+  data_imputed4 <- data
+  for (col in names(imputed4)) {
+    data_imputed4[[col]] <- imputed4[[col]]
+  }
+  
+  data_imputed5 <- data
+  for (col in names(imputed5)) {
+    data_imputed5[[col]] <- imputed5[[col]]
+  }
+  
+  return(list(
+    data_imputed1,
+    data_imputed2,
+    data_imputed3,
+    data_imputed4,
+    data_imputed5
+  ))
+}
+```
+
+```{r}
+ecoli_campy_m <- process_miss(ecoli_campy)
+```
+```{r}
+ecoli_campy_imputed1 <-ecoli_campy_m[[1]]
+ecoli_campy_imputed2 <-ecoli_campy_m[[2]]
+ecoli_campy_imputed3 <-ecoli_campy_m[[3]]
+ecoli_campy_imputed4 <-ecoli_campy_m[[4]]
+ecoli_campy_imputed5 <-ecoli_campy_m[[5]]
+write.csv(ecoli_campy_imputed1,"C:/Users/78428/OneDrive/Desktop/R/PHP2550-Final-Project/data/ecoli_campy_imputed1.csv", row.names = FALSE)
+write.csv(ecoli_campy_imputed2,"C:/Users/78428/OneDrive/Desktop/R/PHP2550-Final-Project/data/ecoli_campy_imputed2.csv", row.names = FALSE)
+write.csv(ecoli_campy_imputed3,"C:/Users/78428/OneDrive/Desktop/R/PHP2550-Final-Project/data/ecoli_campy_imputed3.csv", row.names = FALSE)
+write.csv(ecoli_campy_imputed4,"C:/Users/78428/OneDrive/Desktop/R/PHP2550-Final-Project/data/ecoli_campy_imputed4.csv", row.names = FALSE)
+write.csv(ecoli_campy_imputed5,"C:/Users/78428/OneDrive/Desktop/R/PHP2550-Final-Project/data/ecoli_campy_imputed5.csv", row.names = FALSE)
+```
+
