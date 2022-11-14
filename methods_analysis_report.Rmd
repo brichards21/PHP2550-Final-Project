@@ -1,12 +1,11 @@
 ---
-title: "Methods and Analysis"
-author: "Yanru Liao ,Jina Yang, Breanna Richards"
-date: "2022-11-13"
-output: pdf_document
+output:
+  pdf_document: default
+  word_document: default
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(message=FALSE, warning=FALSE, error=FALSE, echo = FALSE, fig.width = 5, fig.height = 3)
+knitr::opts_chunk$set(message=FALSE, warning=FALSE, error=FALSE, echo = FALSE, fig.width = 6, fig.height = 3)
 
 library(readr)
 library(tidyverse)
@@ -28,29 +27,38 @@ library(mice)
 library(dplyr)
 ```
 
-Recall that the aim of this study is to assess if we can predict future isolate’s performance against certain antibiotics where ‘performance’ is a binary discretion of either susceptible or resistant. In other words, can we learn from past isolates to develop a system to recommend antibiotics to new isolates? We are also generally interested in the kinds of patterns that we can extract from our current data about behaviors of drug susceptibility and resistance including how responses to these antibiotics shift over time.
+# Methods and Analysis
+Link to GitHub: https://github.com/brichards21/PHP2550-Final-Project
 
-The analysis focuses on isolate data collected from the Salmonella enterica, E.coli and Shigella, and Campylobacter jejuni species in the National Center for Biotechnology Information’s (NCBI) Pathogen database. Initially, we had decided to evaluate isolates from these three bacteria within joint modelling and analysis procedures. However, through our data exploration process, we found that our Salmonella isolates had retained two additional pieces of information compared to the E.coli and Campylobacter isolates. This information are antigen formula, which  gives the detected presence of a specific viral antigen indicating viral infection, and serovar/serotype which gives the distinct variation within a certain bacteria. Additionally, while isolate data for Salmonella were retained from 2002 - 2021, E.coli and Campylobacter records didn’t begin presenting themselves in our data until much later (2009 for E.coli and Shigella, and 2016 for Campylobacter). For these reasons, we decided to address the Salmonella isolates separate from the E.coli and Campylobacter isolates, i.e., we’ll be building two separate models to address our main research question of interest: one for Salmonella isolates, and another for both E.coli and Campylobacter.
+Recall that the aim of this study is to assess if we can predict future isolates' performance against certain antibiotics where ‘performance’ is a binary discretion of either susceptibility or resistance. In other words, we want to assess if we learn from past isolates to develop a system to recommend antibiotics to new isolates. We are also generally interested in the kinds of patterns that we can extract from our current data about behaviors of drug susceptibility and resistance including how responses to these antibiotics shift over time.
 
-The full scope of our data contains isolates that are resistant and/or susceptible to 79 unique antibiotics, 76 of which these isolates have shown resistance to, and 62 of which these isolates have shown susceptibility to. Evidently, whereas some isolates have shown resistance to a certain durg, other isolates have shown susceptibility to the same drug. The idea is to create a system or function that will take information about isolates as input values and then within a subset of most common drugs we’ve found the isolates to show the most response to, reccomend the one that we’ve predicted with the most evidence that new isolate is most susceptible to, along with the level of confidence that we have in this recommendation (i.e. the probability that we obtain from our classification model). Therefore, since this is a binary classification problem, on the data that we’ll use to develop our models, we’ll code ‘1’ as drug susceptiblity, ‘0’ as drug resistance, and NA if we do not retain any information about that particular drug on a given particular isolate. 
+\textbf{Data Pre-processing}
 
-As it’s not entirely feasible for us to predict drug response to each and every one of these 79 drugs, we decided to first focus on predicting responses to the most common drugs isolates represented in each of our now two separate datasets, one set for Salmonella, and a second joint set for Campylobacter and E.coli. Antibiotics up for consideration in our model fulfill one of two criteria: 1) represents at least 10% of all drugs within a given bacteria that were reported for isolate susceptibility or resistance, or 2) in the case that no drug represents at least 10% of all drugs reported for susceptibility or resistance within a given bacteria, be within the top two most common drugs that isolates of a given bacteria have shown susceptibility or resistance to. \textbf{Table 1} shows the most common antibiotics isolates within each bacteria showed resistance and susceptibility to. We combine the unique set of these antibiotics as the antibiotics that we will include in our model.
+\underline{Separating the Data}
 
+This analysis focuses on isolate data collected from the Salmonella enterica, E.coli and Shigella, and Campylobacter jejuni species in the National Center for Biotechnology Information’s (NCBI) Pathogen database. Initially, we had decided to evaluate isolates from these three bacteria within joint modelling and analysis procedures. However, through our data exploration process, we found that our Salmonella isolates had retained two additional pieces of information compared to the E.coli and Campylobacter isolates. This information are antigen formula, which  gives the detected presence of a specific viral antigen indicating viral infection, and serovar/serotype which gives the distinct variation within a certain bacteria. Additionally, while isolate data for Salmonella were retained from 2002-2021, E.coli and Campylobacter records did not begin presenting themselves in our data until much later (2009 for E.coli and Shigella, and 2016 for Campylobacter). For these reasons, we split our dataset into two groups. One set for Salmonella and another set for the combination of Campylobacter and E.coli isolates. Notably, this separation was also convenient for the balancing of the different sample sizes within our datasets. Overall, we retained 8,672 observations on Salmonella, 3,880 on E.coli, and 3,497 on Campylobacter. By separating the data into one set for Salmonella and another set for E.coli and Campylobacter, we avoid a joint final model being trained heavily on the Salmonella group due to the relatively larger sample size. 
+
+
+\underline{Reformatting the Most Common Antibioitics}
+
+The full scope of our data contains isolates that are resistant and/or susceptible to 79 unique antibiotics, 76 of which these isolates have shown resistance to, and 62 of which these isolates have shown susceptibility to. Evidently, whereas some isolates have shown resistance to a certain drug, other isolates have shown susceptibility to the same drug. The idea is to create a system or function that will take genetic and baseline covariate information about isolates as input values and then within a subset of the most common drugs we’ve found the isolates to show the most response to, recommend the one that we’ve predicted with the \textit{most} evidence that new isolate is susceptible to, along with the level of confidence that we have in this recommendation (i.e. the probability that we obtain from our classification model). Therefore, since this is a binary classification problem, on the data that we’ll use to develop our models, we’ll code ‘1’ as drug susceptibility, ‘0’ as drug resistance, and NA if we do not retain any information about that particular drug on a given isolate. The subset of most common antibiotics that we want to consider in our models fulfill one of two criteria: 1) represents at least 10% of all antibiotics recorded within a given bacteria's drug response (resistance/susceptible) group, or 2) in the case that no drug represents at least 10% of all drugs reported for susceptibility or resistance within a given bacteria, be within the top two most common drugs that isolates of a given bacteria have shown susceptibility or resistance to. \textbf{Table 1} shows the most common antibiotics that isolates within each bacteria showed resistance and susceptibility to. We combine the unique sets of these antibiotics as the sets to be assessed in the recommendation procedure.
 
 \begin{table}[hbtp]
 \centering
 \caption{Antibiotics Considered in Modeling}  
-\includegraphics[width=10cm, height=10cm, keepaspectratio]{Appendix Tables/drug_tbl.png}
+\includegraphics[width=11cm, height=11cm, keepaspectratio]{data/Appendix Tables/drug_tbl.png}
 \end{table}
 
-The final piece of pre-processing that our data has undergone involves the reformatting of the prevalence of the antimicrobrial resistant genes found in the isolates. There are 499 unique resistant genes found in the isolates within our data. In order to include some level of gene resistant presence as predictors in our model, we chose to include binary variables for the most common resistant genes observed in our data. These variables took a value of 1 if found within a given isolate, and a value of 0 is not found within a given isolate. The genes that we decided to include as predictors in each of the two separate models (one for Salmonella, and another jointly for E.coli and Campylobacter) are displayed in \textbf{Table 2}. We decided to retain the genes with over 2% prevalence in the Salmonella isolates, and the genes with over 3% prevalence in either the E.coli isolates or the Campylobacter isolates. A higher prevalence threshold of 3% was chosen for E.coli and Campylobacter as to not overpopulate the joint E.coli and Campylobacter model with these genetic predictors.  
+\underline{Reformatting the Most Common Antimicrobial Resistant Genes}
+
+We also reformatted the prevalence of the antimicrobial resistant genes found in each of our isolates. There are 499 unique resistant genes found in the isolates within our data. In order to include some level of gene resistant presence as predictors in our model, we chose to include binary variables for the most common resistant genes observed. These variables took a value of 1 if found within a given isolate, and a value of 0 is not found within a given isolate. The genes that we decided to include as predictors in each of the two separate models are displayed in \textbf{Table 2}. We decided to retain the genes with over 2% prevalence in the Salmonella isolates, and the genes with over 3% prevalence in either the E.coli isolates or the Campylobacter isolates. A higher prevalence threshold of 3% was chosen for E.coli and Campylobacter as to not overpopulate the joint E.coli and Campylobacter model with these genetic predictors.  
 
 
 
 \begin{table}[hbtp]
 \centering
 \caption{Antimicrobial Resistant Genes Considered in Modeling}  
-\includegraphics[width=10cm, height=10cm, keepaspectratio]{Appendix Tables/anti_micr_tbl.png}
+\includegraphics[width=10cm, height=10cm, keepaspectratio]{data/Appendix Tables/anti_micr_tbl.png}
 \end{table}
 
 ```{r}
@@ -75,7 +83,7 @@ ecoli_campy_df <- isolates_df %>%
   filter(organism_group != "Salmonella enterica")
 # 7377  records 
 
-
+salm <- read_csv("data/salmonella_processed.csv")
 
 ```
 
@@ -90,7 +98,6 @@ genes_ecoli <- unlist(str_split(ecoli_df$amr_genotypes, ","))
 genes_campy <- unlist(str_split(campy_df$amr_genotypes, ","))
 
 
-#length(unique(c(genes_salm, genes_ecoli, genes_campy)))
 
 ```
 
@@ -179,29 +186,41 @@ ecoli_campy_df <- ecoli_campy_df[, -c(29:30, 32:33, 37)]
 
 
 
+\underline{Handling Missing Data: Multiple Imputation}
+
+Finally, in order to move forward with implementing our methods, we needed a way to handle the missingness in our data. Upon thorough investigation of the data which led us to believe that we were dealing with missingness at random (MAR), we decided to impute these missing values using Multiple Imputation. To do so, we utilized the `mice` function from the `mice` package in R (van Burren, Groothuis-Oudshoorn, 2011).
+
+Multivariate Imputation via Chained Equations (MICE) imputes on a variable by variable basis, meaning that a new imputation model is specified with each new variable containing missingness. Linear regression/predictive mean matching was used to predict missing values for continuous variables, and logistic regression was used to predict missing values for categorical variables.
+
+As a rule of thumb, we omitted the variables with over 80% missingness from our dataset first (which led to the omission of one of the self-made variables from exploratory data analysis assessing the measure of similarity between the antibiotics that isolates of the same SNP cluster show resistance to), and then imputed the remaining variables. For each of our 2 datasets of interest, the Salmonella data and E.coli and Campylobacter data, we imputed five datasets with 5 iterations. 
 
 
+\textbf{Random Forest Classification}
 
 
+For the purpose of classification, we decided on using the Random Forest algorithm. In order to implement this process in R, we will use the `randomForest` function from the `randomForest` package (Liaw and Wiener, 2002). The Random Forest model's building components are decision trees. Decision trees are a sort of supervised learning in which input is continuously split based on certain parameters. Random Forest fits various trees with different bootstrap samples and splits with random feature subsets on each node. Predictions are made using the average of the results from each tree. To partition the data, the decision tree and random forest employ information gain and impurity to ensure that non-informative features are not chosen. To optimize the decision tree, a splitting criterion must be considered; it is critical to decide on splitting options to minimize errors caused by a few observations in a node, which would eventually lead to a lack of statistical significance. However, overfitting can occur when the tree is too deep, and underfitting can happen when the minimal number of samples to split is too small. In order to combat these potential issues in R, we will consider tuning the following parameters for the algorithm on a training dataset: ntree indicating the number of trees, nodesize indicating the minimum size of the terminal node, and mtry indicating the number of randomly sampled variables in each split. Different combinations of these parameters will be explored in a grid search process and using 10-fold cross validation, will be chosen based on their resulting out-of-bag errors, a metric used to measure the prediction error of random forests on data points not utilized in a given bootstrap sample (akin to an internal testing set). More specifically, we'll choose the set of parameters that produce the lowest out of bag error. Performance of our trained models will be primarily assessed on a withheld testing set.
+
+Additionally, to increase the accuracy of prediction and decrease the computational time, we decided to consider variable selection. We'll use the feature selection wrapper algorithm, Boruta, to potentially reduce the dimensionality of our data (`Boruta` function from the `Boruta` package in R) (Kursa and Rudnicki, 2010). In use, the Boruta algorithm first adds randomness to the dataset of interest by creating shuffled copies of all of the features up for consideration. These new shuffled copies are called shadow features. Next, the function applies the random forest on the data and evaluates the importance of each of the features in the classification process. With each iteration of the classifier, the Boruta algorithm checks if the un-shuffled, original feature has a higher importance than the most important of its shuffled shadow features. If an original covariate is not deemed more important to classification than the best of that covariate's associated shadow features, then it is deemed unimportant and removed as a variable worth keeping in the modeling process. The Boruta algorithm stops when either all features are either confirmed or denied as being important, or alternatively when the maximum number of a specified number of random forest runs is reached. 
 
 
+\underline{Visualizations and Tables}
 
-\textbf{Justification for why this plan will answer your question}
-
-The ultimate goal is to build a model or a series of models, rather, that will, out of the antibiotics that we chose to consider, recommend to new isolates the antibiotic predicted with the highest level of confidence that that new isolate will show susceptibility to. Approaching this task with the random forest classifier model is appropriate as we want to predict either a susceptible or resistant response for our isolates on each of the antibiotics and we can assess our levels of confidence as random forest implementation in R doesn't only return the predicted class of each observation, but also the probabilities associated with those predictions. Additionally, random forests is a type of non-parametric supervised machine learning model so we don't have to be held to stringent assumptions of our data like we would with parametric techniques like logistic regression. We are also interested generally in the kinds of patterns that we can extract from our current data, especially when it comes to the most pertinent covariates in the classification processes. We want to find which antimicrobial genes as well as which baseline covaraites are most helpful in deciding how to treat cases of foodborne illness in Salmonella, E.coli, and Campylobacter. And so, what is especially handy about random forests is its emphasis on feature selection. 
-
-As feature selection is a built-in mechanism on random forests, the output of our models are able to provide a simple measure of how integral each variable of interest is to classification. This process will be paramount in extracting tangible insights about associations between drug susceptibility and resistance, and the supporting characteristic information logged in the NCBI database about each new case. Even pertaining to our goal of assessing how time plays a roll in predicting drug response, the mechanisms of the random forest algorithm in R makes it easy to assess the significance of time comparative to the other variables considered in modeling due to this variable importance feature.
+Firstly, we will plot \textbf{out of bag error vs. number of trees} both overall and by class (0 vs 1) to assess the prediction errors of our random forest tuning process. As we are assessing the performance of our random forest models especially on the testing set, we'll be looking to plot and compare the different \textbf{ROC curves} corresponding to area under the curve values, as well as \textbf{variable importance plots} assessed by measures of Mean Decrease Accuracy and Mean Decrease Gini to relatively compare the significance of our predictors in classification. These plots will be helpful to extract any strong associations with drug susceptibility and resistance. If of interest, we will also produce tables for \textbf{confusion matrices} as well as tables to compare the following \textbf{performance metrics}: accuracy, sensitivity, specificity, and area under the curve. Finally, we will compile tables to demonstrate the antibiotics that we predict and recommend our isolates will show strong susceptibility to for both our training and testing set, with emphasis on prediction on our testing set. We will also provide with what level of confidence these drugs have been recommended by our algorithm which will help to assess its efficiency. 
 
 
-The biggest limitation of implementing this model on our data is that it assumes our data are complete and non-missing. As the nature of the NCBI database is generally incomplete, this is a hurdle that we have to thoughtfully address. While we can impute these missing values in a pretty straight-forward process, when we have larger amounts of missingness, these imputed values become less and less reliable. 
+Approaching our study with the random forest classifier model is appropriate to our aims, especially considering that we can assess our levels of confidence in prediction as random forest implementation in R doesn't only return the predicted class of each observation, but also the probabilities associated with those predictions. Additionally, random forests is a type of non-parametric supervised machine learning model so we don't have to be held to stringent assumptions of our data like we would with parametric techniques like logistic regression. We are also interested generally in the kinds of patterns that we can extract from our current data, especially when it comes to the most pertinent covariates in the classification processes. We want to find which antimicrobial genes as well as which baseline covariates are most helpful in deciding how to treat cases of foodborne illness in Salmonella, E.coli, and Campylobacter. And so, what is especially handy about random forests is its emphasis on feature selection. 
+
+As feature selection is a built-in mechanism on random forests, the output of our models are able to provide a easily interpretable measure of how integral each variable of interest is to classification. This process will be paramount in extracting tangible insights about associations between drug susceptibility and resistance, and the supporting characteristic information logged in the NCBI database about each new case. Even pertaining to our goal of assessing how time may play a roll in predicting drug response, the mechanisms of the random forest algorithm in R makes it easy to assess the significance of time comparative to the other variables considered in modeling.
+
+The biggest limitation of implementing this model on our data is that it assumes our data are complete and non-missing. As touched on earlier, to remedy this, we utilized multiple imputation.
 
 
-\textbf{Initial implementation(s) - do a brief use case as a sanity check to make sure you understand how to use the methods and to catch any potential problems.}
+\textbf{Initial Implementation}
 
 
-We'll demonstrate the utilities of the `randomForest` function from the `randomForest` package in R on our data with a simple use case (Liaw and Wiener, 2002). For this example, we used our dataset for Salmonella enterica isolates and focused on the isoaltes' resistant/susceptible response to the antibiotic, tetracycline.
+We'll demonstrate the utilities of random forests on our data with a simple use case. For this example, we used one of the imputed datasets for the Salmonella enterica isolates and focused on the isolates' resistant/susceptible response to the antibiotic, tetracycline.
 
-However, as aforementioned, before we ran this implemention, we first utilized the `Boruta` function from the `Boruta` package in order to perform variable selection (Kursa and Rudnicki, 2010). In action, the Boruta algorithm first adds randomness to the dataset of interest by creating shuffled copies of all of the features up for consideration. These new shuffled copies are called shadow features. Next, the function applies the random forest on the data and evaluates the importance of each of the features in the classification process. With each iteration of the classifier, the Boruta algorithm checks if the un-shuffled, original feature has a higher importance than the most important of its shuffled shadow features. If an original covariate is not deemed more important to classification than the best of that covariate's associated shadow features, then it is deemed unimportant and removed as a variable worth keeping in the modeling process. The Boruta algorithm stops when either all features are either confirmed or denied as being important, or alternatively when the maximum number of a specified number of random forest runs is reached. 
+However, as aforementioned, before we ran this implementation, we first utilized the `Boruta` function from the `Boruta` package in order to perform variable selection. 
 
 
 
@@ -213,7 +232,7 @@ ifelse(grepl("tetracycline", resist_comb), 0, NA))) %>%
   select(-c(strain, isolate, location, serovar,
             serotype, resist_comb, suscept_comb,
             resist, suscept, isolation_source,
-            amr_genotypes, snp_cluster,
+            amr_genotypes, snp_cluster, resist_sim,
             antigen_formula)) %>%
   filter(!is.na(tetracycline)) %>%
   select(-organism_group)
@@ -222,7 +241,7 @@ cols <- c("isolation_type",
           "serovar_new", "country",
           "isolation_source_new",
           "antigen_formula_new",
-         colnames(tetra_test)[12:24])
+         colnames(tetra_test)[11:23])
 
 
 
@@ -237,9 +256,7 @@ tetra_test <- tetra_test %>%
 ```
 
 
-A hurdle of utilizing this algorithm is that it only accepts non-missing data. As our current data currently obtains missing values, for the sake of this demonstration, as mentioned in data-preprocessing, we imputed missing values by utilizing the `mice` function from the `MICE` package in R.
 
-To recap the algorithm, Multivariate Imputatoin via Chained Equations (MICE) assumes Missing at Random (MAR) data and imputes on a variable by variable basis, meaning that a new imputation model is specified with each new variable with missingness. Linear regression is used to predict missing values for continuous variables, and logistic regression is used to predict missing values for categorical variables.
 
 ```{r}
 
@@ -256,30 +273,25 @@ nom_cols <- c("isolation_type", "serovar_new", "country", "isolation_source_new"
 ```
 
 
-After ensuring that all of the categorical variables in our data are expressed as factors, we imputed our missing data.
 
 ```{r}
 
-fact_cols <- c(cols[1:5], colnames(tetra_test)[12:ncol(tetra_test)])
 
-tetra_test[fact_cols] <- lapply(tetra_test[fact_cols], factor)
+
+tetra_test[nom_cols] <- lapply(tetra_test[nom_cols], factor)
 
 
 
 ```
 
 
-Our use of this imputation algorithm will be more heavily scrutinized for the actual implementation of our methods on our data, but for now, we will impute values for any column without much criticism towards the values that are actually being imputed.
-
-We will only work with 1 generated imputed dataset for the sake of this example.
 
 
+```{r, eval=FALSE}
 
-```{r, echo=TRUE, eval=FALSE}
-
-imputed_dat <- mice(data = tetra_test, m = 1,
-     method = "pmm", maxit = 50, 
-     seed = 500)
+ imputed_dat <- mice(data = tetra_test, m = 1,
+      method = "pmm", maxit = 50, 
+      seed = 500)
 ```
 
 
@@ -297,7 +309,7 @@ complete_imputed <- complete(imputed_dat, 1)
 
 
 
-#write_csv(complete_imputed, #"data/imputed_tetra_test_df.csv")
+# write_csv(complete_imputed, "data/imputed_tetra_test_df.csv")
 
 imp_data <- read_csv("data/imputed_tetra_test_df.csv")
 
@@ -306,14 +318,12 @@ imp_data <- read_csv("data/imputed_tetra_test_df.csv")
 
 
 
-After imputing our data, we then move on to the `Boruta` feature selection process.
 
 
 
 ```{r, echo=TRUE, eval=FALSE}
 
-boruta <- Boruta(tetracycline ~ ., 
-data = imp_data, doTrace = 2, maxRuns = 500)
+boruta <- Boruta(tetracycline ~ ., data = imp_data, doTrace = 2, maxRuns = 500)
 
 ```
 
@@ -324,10 +334,11 @@ data = imp_data, doTrace = 2, maxRuns = 500)
 
 ```
 
-From 12 iterations, the Boruta algorithm decided that none of the 23 predictors of consideration were unimportant, so we will will impute them all into the example classification algorithm.
+
+From 12 iterations, the Boruta algorithm decided that none of the 22 predictors of consideration were unimportant, so we used them all in the example classification.
 
 
-We fit a model with drug susceptibility to the antibiotic, tetracycline, as our outcome of interest (a value of 1 for susceptible and a value of 0 for resistant), and the variables collection date, isolation type, minimum SNP distance to an isolate of the same isolation type, minimum SNP distance to an isolate of a different isolation type, serovar, country, isolation source, number of isolates "close" to that isolate (being close to another isolate being defined as having a minimum SNP distance less than or equal to 7 to an isolate of either the same or different isolation type),  antigen formula, average similarity scores between isolates within the same SNP cluster of antibiotics that isolates show resistance and susceptibility to, and finally a set of 12 binary variables indicating the genetic presence of 12 of the most common antimicrobial resistant genes in Salmonella.
+We fit a model with drug susceptibility to the antibiotic, tetracycline, as our outcome of interest (a value of 1 for susceptible and a value of 0 for resistant), and the 22 variables collection date, isolation type, minimum SNP distance to an isolate of the same isolation type, minimum SNP distance to an isolate of a different isolation type, serovar, country, isolation source, number of isolates "close" to that isolate (being close to another isolate being defined as having a minimum SNP distance less than or equal to 7 to an isolate of either the same or different isolation type),  antigen formula, average similarity score between isolates within the same SNP cluster of antibiotics that isolates show susceptibility to, and finally a set of 12 binary variables indicating the genetic presence of 12 of the most common antimicrobial resistant genes in Salmonella.
 
 Note that our outcome of interest, susceptibility on tetracycline is roughly balanced with 51.3% of the isolates showing resistance to tetracycline, and the remaining 48.8% showing susceptibility.
 
@@ -335,8 +346,7 @@ Note that our outcome of interest, susceptibility on tetracycline is roughly bal
 ```{r}
 
 
-
-imp_data[fact_cols] <- lapply(imp_data[fact_cols], factor)
+imp_data[nom_cols] <- lapply(imp_data[nom_cols], factor)
 
 
 
@@ -348,9 +358,7 @@ imp_data[fact_cols] <- lapply(imp_data[fact_cols], factor)
 ```{r, echo = TRUE}
 
 set.seed(1)
-
-rand_forest_test <- randomForest(tetracycline ~.,
-data = imp_data)
+rand_forest_test <- randomForest(tetracycline ~., data = imp_data)
 
 ```
 
@@ -371,18 +379,14 @@ data = imp_data)
 
 
 
-```{r}
-
-#rand_forest_test$type
-#rand_forest_test$ntree
-#rand_forest_test$mtry
-
-```
-
-The output of the random forest command gives the type of random forest, which is classification in this case because our outcome is binary, the number of trees that were grown as a part of the process which in this case was the default 500 trees, and the number of variables tried at each split, which was 4, i.e. the value found by taking the largest integer value less than or equal to, otherwise known as the \textit{floor} value of the square root of the number of columns in the dataset (floor of the $\sqrt{24}$). 
 
 
-The random forest function also provides a measure of the out of bag estimate of the error rate. While this is reported as 2.41% in the model output, we can also plot the out of bag error against the number of trees as well as plot this by class (resistant (0) vs. susceptible (1)).
+The output of the random forest command gives the number of trees that were grown as a part of the process which in this case was the default 500 trees, and the number of variables tried at each split, which was 4, i.e. the value found by taking the largest integer value less than or equal to, otherwise known as the \textit{floor} value of the square root of the number of columns in the dataset (floor of the $\sqrt{24}$). We will tune these values for the official study.
+
+
+The random forest function also provides a measure of the out of bag estimate of the error rate. While this is reported as 2.41% in the model output, we can also plot the out-of-bag error against the number of trees overall and by class.
+
+
 
 
 ```{r}
@@ -439,9 +443,12 @@ abline(a = 0, b = 1)
 
 ```
 
-Notably, \textbf{Figure 1} shows that our model is stronger at predicting the tetracycline susceptibility class than the resistant class, a plot that can be supplemented with other performance related visuals like ROC curve.
 
-We also can extract the statistics of interest based on the confusion matrix outputted from predicted classification. We just collected this on our full dataset for now just for demonstration purposes (\textbf{Table 3}). 
+Notably, \textbf{Figure 1 (left)} shows that our model is stronger at predicting the tetracycline susceptibility class than the resistant class, a plot that can be supplemented with other performance related visuals like ROC curve which we plot alongside the out of bag error plot \textbf{Figure 1 (right)}.
+
+We also can extract the statistics of interest based on the confusion matrix outputted from predicted classification. We just collected these metrics on our full dataset for now for demonstration purposes (\textbf{Table 3}). 
+
+
 
 ```{r}
 
@@ -449,8 +456,6 @@ We also can extract the statistics of interest based on the confusion matrix out
 acc <- as.numeric(conf_matrix$overall['Accuracy'])
 sens <- as.numeric(conf_matrix$byClass['Sensitivity'])
 spec <- as.numeric(conf_matrix$byClass['Specificity'])
-pospred <- as.numeric(conf_matrix$byClass['Pos Pred Value'])
-negpred <- as.numeric(conf_matrix$byClass['Neg Pred Value'])
 auc_ROCR <- auc_ROCR@y.values[[1]]
 
 
@@ -518,10 +523,8 @@ conf_gt <- gt(conf_df,
 ```{r}
 
 metric_tbl <- data.frame("Metric" = c("Accuracy", "Sensitivity", "Specificity",
-                      "Pos Pred Value", "Neg Pred Value", 
                       "AUC"),
-           "Value" = c(acc, sens, spec, pospred, negpred,
-                       auc_ROCR))
+           "Value" = c(acc, sens, spec, auc_ROCR))
 
 ```
 
@@ -560,7 +563,8 @@ kable(metric_tbl,
 
 ```
 
-We will also use importance measures to extract information about the most important predictors in these cases of predicting drug response. Ultimately, we'll be comparing the results and important predictors of multiple models with susceptibility/resistance responses to each of the antibiotics of interest, in order to recommend antibiotics that we predict new isolates will show susceptibility to. In this simple case though, we show that we can extract the most important variables integral to the random forest classification of our data (Figure 2).
+
+We will also extract information about the most important predictors. Ultimately, we'll be comparing the results and important predictors of multiple models with susceptibility/resistance responses to each of the antibiotics of interest, in order to recommend antibiotics that we predict new isolates will show susceptibility to. In this simple case though, we show what a simple plot of this comparison would look like (\textbf{Figure 2}).
 
 ```{r}
 
@@ -582,7 +586,7 @@ var_imp_df5 <- cbind(varImp(rand_forest_test), var = rownames(varImp(rand_forest
 ```
 
 
-```{r fig-imp, fig.cap= "Top 5 Most Important Covariates"}
+```{r fig-imp, fig.cap= "Top 5 Most Important Covariates", fig.width= 4, fig.height=2}
 
 ggplot(data = var_imp_df5,
        aes(x = fct_reorder(var, Overall), y = Overall)) + 
@@ -621,6 +625,11 @@ Moving forward, we'll work to properly tune the hyperparameters within our rando
 
 ## References
 
+Stef van Buuren, Karin Groothuis-Oudshoorn (2011).
+  mice: Multivariate Imputation by Chained Equations
+  in R. Journal of Statistical Software, 45(3), 1-67.
+  DOI 10.18637/jss.v045.i03.
+
 A. Liaw and M. Wiener (2002). Classification and
   Regression by randomForest. R News 2(3), 18--22.
   
@@ -629,3 +638,4 @@ Miron B. Kursa, Witold R. Rudnicki (2010). Feature
   Selection with the Boruta Package. Journal of
   Statistical Software, 36(11), 1-13. URL
   http://www.jstatsoft.org/v36/i11/.
+  
