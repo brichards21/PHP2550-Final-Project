@@ -26,9 +26,46 @@ The primary data source used in this project is the [National Center for Biotech
 
 ## Organization 
 
-- `data`: This folder contains the `.csv` data files used in order to conduct the analyses for our study. Within the data folder is a folder entitled `raw_data`. This folder contains the raw data files pulled directly from the [NCBI website](https://www.ncbi.nlm.nih.gov/pathogens/). Cleaned data used for the study is stored outside of the `raw_data` folder. Within this folder is a `data_cleaning.R` file that compiles all of the code involved in the data cleaning process.
+- `updated_preprocessing`: The file containing code for updated data pre-processing since EDA was performed
 
-- `Literature`: This folder contains all of the relevant literature reviewed for the sake of this study and project. 
+- `methods_analysis_report.Rmd` and `methods_analysis_report.pdf`: This file contains the isolated written Methods and Analysis report done for the study. The pdf version will have relevant code hidden. 
+
+
+**Data folder**
+
+This folder contains the `.csv` data files used in order to conduct the analyses for our study.
+
+- `raw_data` folder: This folder contains the raw data files pulled directly from the [NCBI website](https://www.ncbi.nlm.nih.gov/pathogens/). 
+
+- `salmonella_imputed`: This folder contains the 5 multiple imputed data sets created for missingness in Salmonella isolates.
+
+- `ecoli_campy_imputed`: This folder contains the 5 multiple imputed data sets created for missingness in E coli and Campylobacter isolates.
+
+- `Appendix Tables`: This folder contains supplementary figures and tables.
+
+Cleaned data used for the study is stored outside of any internal folders. Within this folder is a `data_cleaning.R` file that compiles all of the code involved in the data cleaning process.
+
+- `isolates_df.csv`: The intermediate combined data file for all isolates.
+
+- `salmonella_df.csv`: The `isolates_df.csv` data but only for Salmonella isolates.
+
+- `ecoli_campy_df.csv`: The `isolates_df.csv` data but only for Ecoli and Campylobacter isolates.
+
+- `imputed_tetra_test_df.csv`: A test dataset for multiple imputation
+
+- `resistance_df.csv`: A separate dataset highlighting each isolates' resistance response to every antibiotic recorded (value of 1 for recorded as resistant, 0 for not recorded as resistant)
+
+- `susceptible_df.csv`: A separate dataset highlighting each isolates' susceptibility response to every antibiotic recorded (value of 1 for recorded as susceptible, 0 for not recorded as susceptible) 
+
+
+
+**Literature folder** 
+
+This folder contains all of the relevant literature reviewed for the sake of this study and project. 
+
+
+**Literature Review and EDA folder** 
+
 
 - `data_EDA.Rmd` and `data_EDA.Rmd`: This file contains the code and text related to the full Exploratory Data Analysis report done for the study. The pdf version will have the code hidden.
 
