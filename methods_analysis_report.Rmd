@@ -63,16 +63,15 @@ We also reformatted the prevalence of the antimicrobial resistant genes found in
 
 ```{r}
 
-# top susceptibility # top resistance # unique antibiotics used in model
-
-# rownames - Salmonella enterica, E.coli and Shigella, Campylobacter jejuni
-
+# read in isolates data
 isolates_df <- read_csv("data/isolates_df.csv")
 
+# split data for salmonella isolates (8672 records)
 salmonella_df <- isolates_df %>%
   filter(organism_group == "Salmonella enterica")
-# 8672 records
 
+
+# split data for ecoli isolates (3880 records)
 ecoli_df <- isolates_df %>%
   filter(organism_group == "E.coli and Shigella")
 
@@ -83,7 +82,6 @@ ecoli_campy_df <- isolates_df %>%
   filter(organism_group != "Salmonella enterica")
 # 7377  records 
 
-salm <- read_csv("data/salmonella_processed.csv")
 
 ```
 
@@ -91,10 +89,13 @@ salm <- read_csv("data/salmonella_processed.csv")
 
 ```{r}
 
+# list individual genes listed for salmonella isolates
 genes_salm <- unlist(str_split(salmonella_df$amr_genotypes, ","))
 
+# list individual genes listed for ecoli isolates
 genes_ecoli <- unlist(str_split(ecoli_df$amr_genotypes, ","))
 
+# list individual genes listed for campylobacter isolates
 genes_campy <- unlist(str_split(campy_df$amr_genotypes, ","))
 
 
@@ -104,12 +105,15 @@ genes_campy <- unlist(str_split(campy_df$amr_genotypes, ","))
 
 ```{r}
 
+# compile genes with over 2% frequency in salmonella
 common_genes_salm <- as.data.frame(sort(prop.table(table(genes_salm)), decreasing = T)) %>%
   filter(Freq >= 0.02)
 
+# compile genes with over 3% frequency in ecoli
 common_genes_ecoli <- as.data.frame(sort(prop.table(table(genes_ecoli)), decreasing = T)) %>%
   filter(Freq >= 0.03)
 
+# compile genes with over 3% frequency in ecoli
 common_genes_campy <- as.data.frame(sort(prop.table(table(genes_campy)), decreasing = T)) %>%
   filter(Freq >= 0.03)
 
@@ -120,6 +124,7 @@ common_genes_campy <- as.data.frame(sort(prop.table(table(genes_campy)), decreas
 
 ```{r}
 
+# make new variables for common genes in salmonella
 
 salmonella_df[paste0(common_genes_salm$genes_salm)] <- do.call(cbind, as.list(0))
 
@@ -127,6 +132,8 @@ salmonella_df[paste0(common_genes_salm$genes_salm)] <- do.call(cbind, as.list(0)
 anti_salm_df <- salmonella_df[, c(12, 26:37)]
 
 for (i in 2:ncol(anti_salm_df)) {
+  
+  # specify most common genes
   drug_test <- c(colnames(anti_salm_df[-c(4, 5, 6, 7)]),
                 "tet\\(A\\)=COMPLETE",
                 "aph\\(3''\\)-Ib=COMPLETE",
@@ -135,7 +142,7 @@ for (i in 2:ncol(anti_salm_df)) {
     drug <- drug_test[i]
     
   for (j in 1:nrow(anti_salm_df)) {
-
+# if isolate has gene, indicate value of 1, else 0
   
   salmonella_df[j, drug] <- ifelse(grepl(drug, anti_salm_df[j, ]$amr_genotypes), 1, 0)
   
@@ -150,16 +157,19 @@ salmonella_df <- salmonella_df[, -c(28:31)]
 
 ```{r}
 
+# combine common genes for ecoli and campylobacter
 genes_ecoli_campy <- unique(c(common_genes_ecoli$genes_ecoli,
          common_genes_campy$genes_campy))
 
+# make variables for common genes in ecoli and campylobacter
 ecoli_campy_df[paste0(genes_ecoli_campy)] <- do.call(cbind, as.list(0))
 
 
 anti_ecoli_campy_df <- ecoli_campy_df[, c(12, 26:38)]
 
 for (i in 2:ncol(anti_ecoli_campy_df)) {
-  
+ 
+  # specify most common genes 
     drug_test <- c(colnames(anti_ecoli_campy_df[-c(5, 6, 8, 9, 13)]),
                 "tet\\(A\\)=COMPLETE",
                 "aph\\(3''\\)-Ib=COMPLETE",
@@ -170,7 +180,7 @@ for (i in 2:ncol(anti_ecoli_campy_df)) {
     
   for (j in 1:nrow(anti_ecoli_campy_df)) {
 
-  
+  # if isolate has gene, indicate a value of 1, else 0
   ecoli_campy_df[j, drug] <- ifelse(grepl(drug, anti_ecoli_campy_df[j, ]$amr_genotypes), 1, 0)
   
   }
@@ -226,6 +236,7 @@ However, as aforementioned, before we ran this implementation, we first utilized
 
 ```{r}
 
+# test dataset with salmonella isolates
 tetra_test <- salmonella_df %>%
   mutate(tetracycline = ifelse(grepl("tetracycline", suscept_comb), 1,
 ifelse(grepl("tetracycline", resist_comb), 0, NA))) %>%
@@ -237,11 +248,6 @@ ifelse(grepl("tetracycline", resist_comb), 0, NA))) %>%
   filter(!is.na(tetracycline)) %>%
   select(-organism_group)
 
-cols <- c("isolation_type",
-          "serovar_new", "country",
-          "isolation_source_new",
-          "antigen_formula_new",
-         colnames(tetra_test)[11:23])
 
 
 
@@ -260,6 +266,7 @@ tetra_test <- tetra_test %>%
 
 ```{r}
 
+# indicate categorical columns
 nom_cols <- c("isolation_type", "serovar_new", "country", "isolation_source_new",
               "antigen_formula_new", "mds_a_complete", "mds_b_complete",
               "sul2_complete", "sul1_complete", "bla_tem_1_complete",
@@ -275,7 +282,7 @@ nom_cols <- c("isolation_type", "serovar_new", "country", "isolation_source_new"
 ```{r}
 
 
-
+# set categorical variables into factor variables
 tetra_test[nom_cols] <- lapply(tetra_test[nom_cols], factor)
 
 
@@ -286,7 +293,7 @@ tetra_test[nom_cols] <- lapply(tetra_test[nom_cols], factor)
 
 
 ```{r, eval=FALSE}
-
+# make 1 dataset with imputed missing values
  imputed_dat <- mice(data = tetra_test, m = 1,
       method = "pmm", maxit = 50, 
       seed = 500)
@@ -296,7 +303,7 @@ tetra_test[nom_cols] <- lapply(tetra_test[nom_cols], factor)
 
 
 ```{r, eval=FALSE}
-
+# get imputed data
 complete_imputed <- complete(imputed_dat, 1)
 
 ```
@@ -337,7 +344,7 @@ Note that our outcome of interest, susceptibility on tetracycline is roughly bal
 
 ```{r}
 
-
+# ensure categorical variables are still factors after reading csv
 imp_data[nom_cols] <- lapply(imp_data[nom_cols], factor)
 
 
@@ -365,6 +372,8 @@ The random forest function also provides a measure of the out of bag estimate of
 
 ```{r}
 
+# get confusion matrix and ROC and AUC
+
 predicted_vals <- rand_forest_test$predicted
 
 
@@ -390,6 +399,8 @@ auc_ROCR <- performance(roc_pred, measure = "auc")
 
 ```{r fig-tetra-obb, fig.cap= "Out of Bag Error Plot and ROC Curve for Tetracycline RF"}
 
+# plot out of bag error and ROC curve
+
 par(mfrow = c(1, 2))
 plot(rand_forest_test,
      main = "Out of Bag Error RF")
@@ -412,6 +423,7 @@ We also can extract the statistics of interest based on the confusion matrix out
 
 ```{r}
 
+# collect performance metrics
 
 acc <- as.numeric(conf_matrix$overall['Accuracy'])
 sens <- as.numeric(conf_matrix$byClass['Sensitivity'])
@@ -426,6 +438,8 @@ auc_ROCR <- auc_ROCR@y.values[[1]]
 
 
 ```{r}
+
+# save confusion matrix into dataframe
 
 conf_df <- as.data.frame(conf_matrix$table) %>%
   pivot_wider(names_from = Prediction,
@@ -448,6 +462,8 @@ conf_gt <- gt(conf_df,
 
 
 ```{r}
+
+# compile performance metrics into dataframe
 
 metric_tbl <- data.frame("Metric" = c("Accuracy", "Sensitivity", "Specificity",
                       "AUC"),
@@ -474,7 +490,7 @@ We will also extract information about the most important predictors. Ultimately
 
 ```{r}
 
-
+# extract top 5 most important covariates
 
 var_imp_df5 <- cbind(varImp(rand_forest_test), var = rownames(varImp(rand_forest_test))) %>%
   arrange(desc(Overall)) %>%
@@ -485,6 +501,8 @@ var_imp_df5 <- cbind(varImp(rand_forest_test), var = rownames(varImp(rand_forest
 
 
 ```{r fig-imp, fig.cap= "Top 5 Most Important Covariates", fig.width= 4, fig.height=2}
+
+# plot top 5 most important covariates 
 
 ggplot(data = var_imp_df5,
        aes(x = fct_reorder(var, Overall), y = Overall)) + 
