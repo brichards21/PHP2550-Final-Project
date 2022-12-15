@@ -26,6 +26,8 @@ The primary data source used in this project is the [National Center for Biotech
 
 ## Organization 
 
+**Methods and Analysis folder**
+
 - `updated_preprocessing`: The file containing code for updated data pre-processing since EDA was performed
 
 - `methods_analysis_report.Rmd` and `methods_analysis_report.pdf`: This file contains the isolated written Methods and Analysis report done for the study. The pdf version will have relevant code hidden. 
@@ -74,19 +76,19 @@ This folder contains all of the relevant literature reviewed for the sake of thi
 - `lit_review_EDA.Rmd` and `lit_review_EDA.pdf`: This file contains the Rmd file for the combined Literature Review and EDA report. The pdf version will have the code hidden. 
 
 
-**Poster Folder**
+**Poster folder**
 
 This folder contains the research poster as well as associated images for this project. 
 
 
-**Final Report Folder**
+**Final Report folder**
 
 This folder contains all relevant material related to the final report of this project. 
 
 - The `report_data` folder within this folder contains all of the data referred to in the writing of the report, with additional processing as detailed in `report_data_processing.R`. 
--
+
 - This data is also called and utilized in the `Final_Report.Rmd` file which contains both the written text and the code primarily for the random forest and logistic regression model runs as well as the extraction of performance on the test sets. 
-- 
+
 - The `report_figures` folder within the Final Report folder contains the figures in the report that were not created directly in RMarkdown. Inside of the `report_figures` folder is code for the variable importance plots displayed in the report.
 
 - The `hyperparameter_tuning.R` file contains the code for tuning the hyperparameters of the random foreset models.
