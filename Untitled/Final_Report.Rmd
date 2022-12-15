@@ -1,10 +1,10 @@
 ---
 title: Predicting Drug Resistance and Susceptibility in Foodborne Illnesses with Random Forests
 author: Breanna Richards, Yanru Liao, Jina Yang
-affiliation: Department of Biostatistics, Brown University School of Public Health
+institute: Department of Biostatistics, Brown University School of Public Health
     
 abstract: |
-  Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur eget porta erat. Morbi consectetur est vel gravida pretium. Suspendisse ut dui eu ante cursus gravida non sed sem. Nullam sapien tellus, commodo id velit id, eleifend volutpat quam. Phasellus mauris velit, dapibus finibus elementum vel, pulvinar non tellus. Nunc pellentesque pretium diam, quis maximus dolor faucibus id. Nunc convallis sodales ante, ut ullamcorper est egestas vitae. Nam sit amet enim ultrices, ultrices elit pulvinar, volutpat risus.
+  In recent years, the excessive incorrect use of antibiotics for the treatment of infectious diseases in humans and animals has become a major area of concern for human health. When this behavior of misusage persists, bacteria are not killed but instead develop survival traits, or resistance, against these treatments, which they can pass on to even more bacteria. This often results in increased risks of severe infections, illnesses, and even death. The designation of effective treatment for these infections requires learning of organisms’ susceptibility to various antibiotics, though the traditional clinical processes to do so are often time-consuming. High-throughput sequencing technology based on genomic data of bacteria has the potential to fast guide this decision-making process. Using data from the National Center for Biotechnology Information’s (NCBI) Pathogen database, this study utilized binary random forest classification for antibiotic responses of Salmonella enterica, E.coli and Shigella, and Campylobacter jejuni isolates in consideration of two cases of data availability 1) source and genetic predictors and 2) source predictors only (to capture cases where genomic information is unavailable) to predict pathogens’ susceptibility or resistance to prominent antibiotics. Observed patterns in these data were numerically assessed using multivariable logistic regression. Additionally, a system was developed to receive genetic and baseline information from new cases, to then return the most probable antibiotic those cases would garner susceptible responses to. Overall, both the models containing source and genetic predictors, and those only considering source predictors saw favorable performance with average sensitivity values of 0.98 and 0.79 respectively. Collection date, serovar, and isolation source variables were consistently integral in prediction. Upon utilizing the recommendation system on the testing data for the three species of interest, recommendations for E.coli and Shigella, and Campylobacter jejuni isolates saw the most agreement between the source and genetic predictor models and the source predictor only models. Prediction in Salmonella isolates were most dependent upon information about the presence/absence of antimicrobial resistant genes. The accurate and confident prescription of these drugs can help to target outbreaks at its source to quell the continued spread of disease without the risk of the unfavorable genetic outcomes that can result from mistreatment.
   
 
 bibliography: mybibfile.bib
@@ -35,16 +35,12 @@ library(ranger)
 
 ```
 
-
+Link to GitHub Repository: https://github.com/brichards21/PHP2550-Final-Project
 
 # Introduction
 
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur eget porta erat. Morbi consectetur est vel gravida pretium. Suspendisse ut dui eu ante cursus gravida non sed sem. Phasellus mauris velit, dapibus finibus elementum vel, pulvinar non tellus. Nunc pellentesque pretium diam, quis maximus dolor faucibus id. Nunc convallis sodales ante, ut ullamcorper est egestas vitae. Nam sit amet enim ultrices, ultrices elit pulvinar, volutpat risus.
 
-A list
 
-- Item 1
-- Item 2
 
 Here are two sample references: @Feynman1963118 [@Dirac1953888].
 
@@ -54,7 +50,7 @@ Here are two sample references: @Feynman1963118 [@Dirac1953888].
 \begin{table}[hbtp]
 \centering
 \caption{Antibiotics Considered in Modeling}  
-\includegraphics[width=14cm, height=14cm, keepaspectratio]{report_figures/antibiotic_table.png}
+\includegraphics[width=12cm, height=12cm, keepaspectratio]{report_figures/antibiotic_table.png}
 \end{table}
 
 
@@ -63,11 +59,11 @@ Here are two sample references: @Feynman1963118 [@Dirac1953888].
 
 A total of 16,049 isolates with antibiotic information (8,672 observations on Salmonella, 3,880 on E.coli, and 3,497 on the Campylobacter species) were retained and utilized for the purposes of this analysis. Data were separated by species and within each species, random forest models predicted susceptible/resistant outcomes on the most commonly recorded antibiotics recorded in \textbf{Table 1}. 
 
-Data for each species were split 70-30 into a training set used to build that species' associated models, and a testing set in order to assess the performance of those models on data not directly used in the training process.
+Data for each species were split 80-20 into a training set used to build that species' associated models, and a testing set in order to assess the performance of those models on data not directly used in the training process.
 
 As aforementioned, in order to reduce the dimensionality of our data, we utilized the Boruta algorithm on our training data before proceeding with applications to random forests (citation). Variable selection will only be performed for the models containing both source and genetic predictors.
 
-In order to optimize the performance of our models, we used 10-fold cross validation (CV), a process in which our training data is split into 10 subsets and the model is iteratively fit 10 times, each time on 9 (k-1) of the folds with performance being evaluated on the $k^{th}$ fold - a different subset of the data each time. Many iterations of the 10-fold CV process is performed, each with a different combination of our hyperparameters of interest. For the purposes of this study, we tested different values for the number of trees (`ntree`) contributing to the overall prediction decisions, and the number of randomly sampled variables to be considered at each split (`mtry`) (cite). The combination that produced the lowest out-of-bag error, a metric used to measure the prediction error on data not utilized in a given bootstrap sample, will be the values used in the final random forest models. 
+In order to optimize the performance of our models, we used 10-fold cross validation (CV), a process in which our training data is split into 10 subsets and the model is iteratively fit 10 times, each time on 9 (k-1) of the folds with performance being evaluated on the $k^{th}$ fold - a different subset of the data each time. Many iterations of the 10-fold CV process is performed, each with a different combination of our hyper-parameters of interest. For the purposes of this study, we tested different values for the number of trees (`ntree`) contributing to the overall prediction decisions, and the number of randomly sampled variables to be considered at each split (`mtry`) (cite). The combination that produced the lowest out-of-bag error, a metric used to measure the prediction error on data not utilized in a given bootstrap sample, will be the values used in the final random forest models. 
 
 Set $m$ = number of predictors in the data. We tested three common values for mtry: $\sqrt{m}, \: m/3$ (rounded down to the nearest integer), and $m/2$ (rounded down to the nearest integer) (cite). For number of trees, we tested values 250, 500, and 1,000. In these processes, we want enough trees to stabilize the error but not so many that the ensemble becomes correlated and causes the model to be overfit.
 
@@ -170,23 +166,23 @@ For our models containing only source predictors, we considered only the followi
 
 
 \underline{Salmonella enterica}
-None of the variables within the salmonella dataset were deemed unimportant enough to exclude in any of the four random forest models considering both source and genetic predictors, i.e. all predictors (outcome tetracyline model, outcome streptomycin model, outcome ampicillin model, and outcome sulfisoxazole model). And so, during hyperparameter tuning, we consider all predictors in the data. 
+None of the variables within the salmonella dataset were deemed unimportant enough to exclude in any of the four random forest models considering both source and genetic predictors, i.e. all predictors (outcome Tetracycline model, outcome streptomycin model, outcome Ampicillin model, and outcome Sulfisoxazole model). And so, during hyper-parameter tuning, we consider all predictors in the data. 
 
 
 \underline{E.coli and Shigella}
-In predicting response to meropenem, the presence/absence of 7 antimicrobial resistant genes were deemed either unimportant (6) or tenetatively unimportant (1) so we decided to remove all 7 of those genes from being predictors in that model (bla_oxa_193_complete, x50s_122_a103v_point, gyr_a_t86i_point, bla_oxa_complete, tet_o_complete, aph_3_ii_ia_complete, and bla_ec_complete).
+In predicting response to Meropenem, the presence/absence of 7 antimicrobial resistant genes were deemed either unimportant (6) or tentatively unimportant (1) so we decided to remove all 7 of those genes from being predictors in that model (bla_oxa_193_complete, x50s_122_a103v_point, gyr_a_t86i_point, bla_oxa_complete, tet_o_complete, aph_3_ii_ia_complete, and bla_ec_complete).
 
 
-In predicting antibiotic response to tetracycline in E.coli isolates, the presence/absence of 5 antimicrobial resistant genes were considered to be unimportant and were thus excluded in hyperparameter tuning and final model runs for E.coli: aph_3_ii_ia_complete, bla_oxa_193_complete, gyr_a_t86i_point, tet_o_complete, x50s_122_a103v_point. 
+In predicting antibiotic response to tetracycline in E.coli isolates, the presence/absence of 5 antimicrobial resistant genes were considered to be unimportant and were thus excluded in hyper-parameter tuning and final model runs for E.coli: aph_3_ii_ia_complete, bla_oxa_193_complete, gyr_a_t86i_point, tet_o_complete, x50s_122_a103v_point. 
 
 
-In predicting antibiotic response to ampicillin and ciprofloxacin, the same 5 attributes were confirmed unimportant.
+In predicting antibiotic response to Ampicillin and Ciprofloxacin, the same 5 attributes were confirmed unimportant.
 
 
 \underline{Campylobacter jejuni}
 In predicting antibiotic response to tetracycline within Campylobacter isolates, seven antimicrobial resistant genes were deemed unimportant: acr_f_complete, aph_3_ib_complete, aph_6_id_complete, bla_ec_complete, mdt_m_complete, tet_a_complete, and sulf2_complete.
 
-The same seven genes were deemed unimportant in predicting gentamicin, erythromycin, and ciprofloxacin.
+The same seven genes were deemed unimportant in predicting Gentamicin, Erythromycin, and Ciprofloxacin.
 
 
 
@@ -266,7 +262,7 @@ rf_model_salm_strep_s <- ranger(
 )
 
 
-# sulfisoxazole
+# Sulfisoxazole
 
 rf_model_salm_sulf <- ranger(
   formula = sulfisoxazole ~ .,
@@ -292,7 +288,7 @@ rf_model_salm_sulf_s <- ranger(
 )
 
 
-# ampicillin
+# Ampicillin
 
 rf_model_salm_amp <- ranger(
   formula = ampicillin ~ .,
@@ -479,7 +475,7 @@ rf_model_ecoli_tet_s <- ranger(
 
 
 
-# meropenem
+# Meropenem
 rf_model_ecoli_mero <- ranger(
   formula = meropenem ~ .,
   data = ecoli_mero_train,
@@ -504,7 +500,7 @@ rf_model_ecoli_mero_s <- ranger(
 )
 
 
-# ciprofloxacin
+# Ciprofloxacin
 rf_model_ecoli_cip <- ranger(
   formula = ciprofloxacin ~ .,
   data = ecoli_cip_train,
@@ -530,7 +526,7 @@ rf_model_ecoli_cip_s <- ranger(
 
 
 
-# ampicillin
+# Ampicillin
 rf_model_ecoli_amp <- ranger(
   formula = ampicillin ~ .,
   data = ecoli_amp_train,
@@ -740,7 +736,7 @@ rf_model_campy_gent_s <- ranger(
 )
 
 
-# ciprofloxacin
+# Ciprofloxacin
 rf_model_campy_cip <- ranger(
   formula = ciprofloxacin ~ .,
   data = campy_cip_train,
@@ -766,7 +762,7 @@ rf_model_campy_cip_s <- ranger(
 
 
 
-# erythromycin
+# Erythromycin
 rf_model_campy_ery <- ranger(
   formula = erythromycin ~ .,
   data = campy_ery_train,
@@ -903,15 +899,15 @@ campy_ery_auc_s <- auc(campy_ery_test$erythromycin,
 
 ## Test Set Performance
 
-After hyperparameter tuning (see Appendix), we assessed the performance of our models on testing sets for each species of interest (\textbf{Table 2}).
+After hyper-parameter tuning (see 'Final Report' folder in GitHub repository), we assessed the performance of our models on testing sets for each species of interest (\textbf{Table 2}).
 
 \begin{table}[hbtp]
 \centering
 \caption{Model Performance on Test Sets for Salmonella, E.coli, and Campylobacter}  
-\includegraphics[width=18cm, height=24cm, keepaspectratio]{report_figures/test_performance.png}
+\includegraphics[width=18cm, height=50cm]{report_figures/test_performance.png}
 \end{table}
 
-Overall, our all models containing both source and genetic predictors performed exceptionally well on our test data. Most models including genetic predictors obtained accuracy, sensitivity, specificity, and area under the ROC curve values of over 0.90, which shows great performance and utility. As the goal of the project is to create a recommendation system to apply to new cases of these species, we may want to prioritize sensitivity over accuracy or specificity since we want to reliably recommend an antibiotic that that new case would be susceptible to (susceptibility being defined as the positive '1' class in our models). Thus, using average sensitivity as a benchmark, our models for Campylobacter jejuni and Salmonella enterica perform the best with E.coli and Shigella not too far behind at an average of 0.96. Evidently, it seems that the models containing both source and genetic predictors may perform nearly perfectly, insinuating that there is information contained in these models that are highly correlated with the outcomes of antibiotic response.
+Overall, our all models containing both source and genetic predictors performed exceptionally well on our test data. Most models including genetic predictors obtained accuracy, sensitivity, specificity, and area under the ROC curve values over 0.90, which shows great performance and utility. As the goal of the project was to create a recommendation system to apply to new cases of these species, we may want to prioritize sensitivity over accuracy or specificity since we want to reliably recommend an antibiotic that that new case would be susceptible to (susceptibility being defined as the positive '1' class in our models). Thus, using average sensitivity as a benchmark, our models for Campylobacter jejuni and Salmonella enterica perform the best with E.coli and Shigella not too far behind at an average of 0.96. Evidently, it seems that the models containing both source and genetic predictors may perform nearly perfectly, insinuating that there is information contained in these models that are highly correlated with the outcomes of antibiotic response.
 
 As a result of this, we decided to investigate alternative models that included only 'source' predictors, i.e. reducing the predictor subspace down to just 5 variables in the salmonella models (serovar, collection date, isolation type, country, and isolation source) and 4 variables in both the E.coli and Campylobacter models (collection date, isolation type, country, and isolation source due to serovar information not being retained on E.coli and Campylobacter isolates). We also treat this scenario to be more aligned with the kind of information that we would except the average person to have about their case if they suspect they've contracted one of these foodborne illnesses, as well as the kind of information that would be easily accessible without having to go through the potentially tedious process of clinical testing to find genetic specific information. The question of interest then becomes: how accurate and useful can these models still be in the absence of less attainable genetic information? If we were to build a recommendation system for more public but safe use, can our models still be reliable to the average person?
 
@@ -1230,13 +1226,15 @@ log_campy <- glm(tetracycline ~ collection_date + isolation_source_new,
 \begin{table}[hbtp]
 \centering
 \caption{Logistic Regression Results on Antibioitic Response to Tetracycline for Salmonella, E.coli, and Campylobacter isolates. Displays the multiplicative odds of having a susceptible response to Tetracycline.}  
-\includegraphics[width=16cm, height=18cm, keepaspectratio]{report_figures/log_reg_results.png}
+\includegraphics[width=16cm, height=50cm]{report_figures/log_reg_results.png}
 \end{table}
+
+
 
 \textbf{Table 3} displays the multiplicative odds constant associated with each variable of interest. Note that while isolation source and serovar are categorical variables and thus are indicators in nature, collection date is a continuous variable and so the odds constant represents with each 1-year increase, how much the odds of an isolate having a susceptible response is multiplied by. Values above 1 increase the odds while values less than 1 decrease the odds. 
 
 
-Most notably, serovar Enteritidis, and a stool isolation source have the largest \textit{significant} magnitude of effect on the odds. While serovar Enteritidis drastically increases the odds of Salmonella isolates being susceptible to tetracycline, a stool isolation source decreases the odds the most, though not nearly as drastically. Additionally, the more recent the year, the slightly lower the odds of responding susceptibly to tetracycline. 
+Most notably, serovar Enteritidis, and a stool isolation source have the largest \textit{significant} magnitude of effect on the odds. While serovar Enteritidis drastically increases the odds of Salmonella isolates being susceptible to tetracycline, a stool isolation source decreases the odds the most, though not nearly as drastically. Additionally, the more recent the year, the slightly lower the odds of responding with susceptibility to tetracycline. 
 
 In the E.coli isolates, having a turkey isolation source lowers the odds of being susceptible to tetracycline the most, although an isolation source of stool or water have similar effects in terms of magnitude and direction.
 
@@ -1489,7 +1487,7 @@ example_recc <- cbind(species = c(rep("Salmonella enterica", 3),
 
 
 kable(example_recc,
-      col.names =  c("species", "case number", "Genetic + Source Prediction",
+      col.names =  c("Species", "Case number", "Genetic + Source Prediction",
                      "Source Only Prediction"),
       caption = "Three randomly selected predictions from each species") %>%
   kable_styling()
@@ -1502,30 +1500,26 @@ kable(example_recc,
 
 # Discussion
 
-Our models found proved to perform significantly well on the NCBI data for Salmonella enterica, E.coli and Shigella, and Campylobacter isolates. 
+Our models proved to perform significantly well on the NCBI data for Salmonella enterica, E.coli and Shigella, and Campylobacter isolates. It seems that even without retaining information for the presence/absence of antimicrobial resistant genes, our models still performed well, which may insinuate that 'source information' is often sufficient to prescribing antibiotic treatment if that is the desired root to tackle foodborne illnesses, especially when extracting that kind of genetic information is not feasible or timely enough. Overall, in our analysis, we noticed a pattern in that while the antimicrobial resistant genes were consistently important to predicting a susceptible or resistant response to tetracycline across all three of the species, even in the source and genetic models, genetic predictors were ranked as less important, although not ignorable. Generally, the TET, APH, SUL2, and BLA genes were the genes most imperative to have information about for predicting antibiotic response.
 
-- talk about patterns extracted 
-- talk about utilities of source model 
-- collection date being important - patterns over time? 
-- to know about response to tetracycline: know about TET and APH genes 
+There were also some patterns that we were able to extract. In the source only models, serovar (for Salmonella only), isolation source, and collection date (which may indicate changes in resistance and susceptibility over time) were most commonly ranked as the most important predictors. Sources from pork, stool, and turkey were highly related to the antibiotic response of tetracycline, the most commonly reported antibiotic in the overall data. Serovar Enteritidis also had a very large effect on the odds of an isolate garnering a susceptible response to tetracycline. The inclusion of collection date as a top predictor also stirs some signal that antibiotic response is not consistent over time, and that perhaps due to prior mistreatment or even proper treatment patterns that have occurred involving treating these cases, certain genes have become more resistant to antibiotics that they might have been previously susceptible to. In future work, it may be of value to deeply examine patterns of when genes switch from being susceptible to resistant, and perhaps be able to predict when a gene will become resistant to certain antibiotics.
 
-in predicting for susceptibility/resistance to tetracycline, the TET genes are most important to classification. The APH genes are most important to predicting response to streptomycin. The SUL2 genes are most important to predicting sulfisoxazole, and the BLA genes are most important to classifying response to ampicillin. 
-
--  agreed on ~41% of cases. For E.coli isolates, the two models agreed ~94% of the time, a huge leap in improvement from the salmonella isolates. Finally, the models on the Campylobacter isolates agreed ~84% of the time.
-
+Lastly, in the assessment of our developed recommendation system, we overall observed the most agreement between decisions made by our source and genetic models and those made by our source only models, within the E.coli isolates (94% agreement), and in the Campylobacter isolates (84% agreement). This emphasizes the potential sufficiency of 'source' predictors without the extra assistance of antimicrobial resistant gene information for those species, but this should be validated further with the use of external data before any solid conclusions can be drawn.
 
 
 
 # Limitations
 
-- optimal cutoff not tested for
-- mentioned in intro: the way susceptible and resistant are defined 
-- lack of data: only retained isolates with antibiotic information, might be an inherent bias there
-- self reported antibiotic information 
+There are a few limitations of this study. Firstly, in order to predict responses to the antibiotics considered in our model, we considered a standard probability cut-off value of 0.5. While this value is commonly used, in practice, it is favorable to test for the best cutoff values, especially in thoughtful consideration of metric prioritization, i.e. the prioritization of sensitivity over specificity and vice versa. Additionally, we recognize that there are several limitations that our data pose to fully exploring our research question. As aforementioned, by only retaining records from the NCBI database that have non-missingness in drug response, we’ve limited the isolates and cases that we’re able to observe as the drug response variable (AST_phenotypes) is more often than not missing. Additionally, this variable is defined by the data submitter, so there could be some error or objectivity involved in that process. The NCBI Pathogen Detection Help Documentation site notes that these data are typically submitted using CLSI or EUCAST guidelines, which change over time. Alternatively, drug response classification is decided by an automated instrument which may infer cutoffs. This could mean that records submitted using an earlier standard/guideline may have different resistance and susceptibility criteria for the same antibiotic compound than it would if using a later standard. Even for the same organism and same isolate, different tests may yield different results. This may bring some nuance into the problem space of what we observe in our data as criteria don’t seem to be uniform overtime and vary depending on the different standards used to define drug response.
+Additionally, some of the variables that we observe only have information for Salmonella isolates. These variables are antigen formula and serovar/serotype. And so, these variables were only helpful to refine our analysis for Salmonella but were not able to contribute to the other two bacteria of interest. This
+approach is also taking a strong assumption that if an isolate is susceptible or resistant to an antibiotic, then that would recorded in the data, which reasonably, doesn’t always hold true. Additionally, we note that
+genomic responses to antibiotics are more than likely to change over time as bacteria start to learn more about the antibiotics that are used to treat them, and in response may eventually build a resistance to them. This problem space surrounding treatment is ongoing and constantly in flux due to this. Thus, we realize that what is represented in our data now may or may not be a good scope for what could be represented in data like this for future years.
 
-# Conclusions
 
-In the absence of traditional clinical-based procedures, we can turn to methods in machine learning to help prevent foodborne illnesses and outbreaks through the appropriate prescription of antibiotics to heterogeneous cases.
+
+# Conclusion
+
+In the absence of traditional clinical-based procedures, we can turn to methods in machine learning to help prevent foodborne illnesses and outbreaks through the appropriate prescription of antibiotics to heterogeneous cases. Though the use of genetic information directly is most favorable to aid in this process, accessible source information still prove to have strong predictive power in select and non-negligible instances. The accurate and confident prescription of these drugs can help to target outbreaks at its source to quell the continued spread of disease without the risk of the unfavorable genetic outcomes that can result from mistreatment.
 
 
 # References {#references .unnumbered}
