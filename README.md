@@ -26,6 +26,8 @@ The primary data source used in this project is the [National Center for Biotech
 
 ## Organization 
 
+**Methods and Analysis folder**
+
 - `updated_preprocessing`: The file containing code for updated data pre-processing since EDA was performed
 
 - `methods_analysis_report.Rmd` and `methods_analysis_report.pdf`: This file contains the isolated written Methods and Analysis report done for the study. The pdf version will have relevant code hidden. 
@@ -74,12 +76,12 @@ This folder contains all of the relevant literature reviewed for the sake of thi
 - `lit_review_EDA.Rmd` and `lit_review_EDA.pdf`: This file contains the Rmd file for the combined Literature Review and EDA report. The pdf version will have the code hidden. 
 
 
-**Poster Folder**
+**Poster folder**
 
 This folder contains the research poster as well as associated images for this project. 
 
 
-**Final Report Folder**
+**Final Report folder**
 
 This folder contains all relevant material related to the final report of this project. 
 
