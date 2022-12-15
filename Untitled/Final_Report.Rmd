@@ -1,0 +1,1533 @@
+---
+title: Predicting Drug Resistance and Susceptibility in Foodborne Illnesses with Random Forests
+author: Breanna Richards, Yanru Liao, Jina Yang
+affiliation: Department of Biostatistics, Brown University School of Public Health
+    
+abstract: |
+  Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur eget porta erat. Morbi consectetur est vel gravida pretium. Suspendisse ut dui eu ante cursus gravida non sed sem. Nullam sapien tellus, commodo id velit id, eleifend volutpat quam. Phasellus mauris velit, dapibus finibus elementum vel, pulvinar non tellus. Nunc pellentesque pretium diam, quis maximus dolor faucibus id. Nunc convallis sodales ante, ut ullamcorper est egestas vitae. Nam sit amet enim ultrices, ultrices elit pulvinar, volutpat risus.
+  
+
+bibliography: mybibfile.bib
+output: pdf_document
+
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(message=FALSE, warning=FALSE, error=FALSE, echo = FALSE
+                      #, fig.width = 6, fig.height = 3
+                      )
+
+library(caret)
+library(tidyverse)
+library(knitr)
+library(kableExtra)
+library(janitor)
+library(missForest)
+library(mice)
+library(egg)
+library(quanteda)
+library(readr)
+library(Boruta)
+library(ggpubr)
+library(randomForest)
+library(pROC)
+library(ranger)
+
+```
+
+
+
+# Introduction
+
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur eget porta erat. Morbi consectetur est vel gravida pretium. Suspendisse ut dui eu ante cursus gravida non sed sem. Phasellus mauris velit, dapibus finibus elementum vel, pulvinar non tellus. Nunc pellentesque pretium diam, quis maximus dolor faucibus id. Nunc convallis sodales ante, ut ullamcorper est egestas vitae. Nam sit amet enim ultrices, ultrices elit pulvinar, volutpat risus.
+
+A list
+
+- Item 1
+- Item 2
+
+Here are two sample references: @Feynman1963118 [@Dirac1953888].
+
+
+# Methods
+
+\begin{table}[hbtp]
+\centering
+\caption{Antibiotics Considered in Modeling}  
+\includegraphics[width=14cm, height=14cm, keepaspectratio]{report_figures/antibiotic_table.png}
+\end{table}
+
+
+
+# Results
+
+A total of 16,049 isolates with antibiotic information (8,672 observations on Salmonella, 3,880 on E.coli, and 3,497 on the Campylobacter species) were retained and utilized for the purposes of this analysis. Data were separated by species and within each species, random forest models predicted susceptible/resistant outcomes on the most commonly recorded antibiotics recorded in \textbf{Table 1}. 
+
+Data for each species were split 70-30 into a training set used to build that species' associated models, and a testing set in order to assess the performance of those models on data not directly used in the training process.
+
+As aforementioned, in order to reduce the dimensionality of our data, we utilized the Boruta algorithm on our training data before proceeding with applications to random forests (citation). Variable selection will only be performed for the models containing both source and genetic predictors.
+
+In order to optimize the performance of our models, we used 10-fold cross validation (CV), a process in which our training data is split into 10 subsets and the model is iteratively fit 10 times, each time on 9 (k-1) of the folds with performance being evaluated on the $k^{th}$ fold - a different subset of the data each time. Many iterations of the 10-fold CV process is performed, each with a different combination of our hyperparameters of interest. For the purposes of this study, we tested different values for the number of trees (`ntree`) contributing to the overall prediction decisions, and the number of randomly sampled variables to be considered at each split (`mtry`) (cite). The combination that produced the lowest out-of-bag error, a metric used to measure the prediction error on data not utilized in a given bootstrap sample, will be the values used in the final random forest models. 
+
+Set $m$ = number of predictors in the data. We tested three common values for mtry: $\sqrt{m}, \: m/3$ (rounded down to the nearest integer), and $m/2$ (rounded down to the nearest integer) (cite). For number of trees, we tested values 250, 500, and 1,000. In these processes, we want enough trees to stabilize the error but not so many that the ensemble becomes correlated and causes the model to be overfit.
+
+To account for any potential class imbalances within each model, we weight classes by $\frac{1}{prop\:of\:samples\:in\:class}$.
+ 
+
+```{r}
+
+# training sets
+salm_tet_train <- as.data.frame(read_csv("report_data/salm_tet_train.csv")) %>%
+  mutate(tetracycline = as.factor(tetracycline))
+
+salm_strep_train <- as.data.frame(read_csv("report_data/salm_strep_train.csv")) %>%
+  mutate(streptomycin = as.factor(streptomycin))
+
+salm_sulf_train <- as.data.frame(read_csv("report_data/salm_sulf_train.csv")) %>%
+  mutate(sulfisoxazole = as.factor(sulfisoxazole))
+
+salm_amp_train <- as.data.frame(read_csv("report_data/salm_amp_train.csv")) %>%
+  mutate(ampicillin = as.factor(ampicillin))
+
+ecoli_tet_train <- as.data.frame(read_csv("report_data/ecoli_tet_train.csv")) %>%
+  mutate(tetracycline = as.factor(tetracycline))
+
+ecoli_mero_train <- as.data.frame(read_csv("report_data/ecoli_mero_train.csv")) %>%
+  mutate(meropenem = as.factor(meropenem))
+
+ecoli_cip_train <- as.data.frame(read_csv("report_data/ecoli_cip_train.csv")) %>%
+  mutate(ciprofloxacin = as.factor(ciprofloxacin))
+
+ecoli_amp_train <- as.data.frame(read_csv("report_data/ecoli_amp_train.csv")) %>%
+  mutate(ampicillin = as.factor(ampicillin))
+
+campy_tet_train <- as.data.frame(read_csv("report_data/campy_tet_train.csv")) %>%
+  mutate(tetracycline = as.factor(tetracycline))
+
+campy_gent_train <- as.data.frame(read_csv("report_data/campy_gent_train.csv")) %>%
+  mutate(gentamicin = as.factor(gentamicin))
+
+campy_ery_train <- as.data.frame(read_csv("report_data/campy_ery_train.csv")) %>%
+  mutate(erythromycin = as.factor(erythromycin))
+
+campy_cip_train <- as.data.frame(read_csv("report_data/campy_cip_train.csv")) %>%
+  mutate(ciprofloxacin = as.factor(ciprofloxacin))
+
+
+# testing sets
+salm_tet_test <- as.data.frame(read_csv("report_data/salm_tet_test.csv")) %>%
+  mutate(tetracycline = as.factor(tetracycline))
+
+salm_strep_test <- as.data.frame(read_csv("report_data/salm_strep_test.csv")) %>%
+  mutate(streptomycin = as.factor(streptomycin))
+
+salm_sulf_test <- as.data.frame(read_csv("report_data/salm_sulf_test.csv")) %>%
+  mutate(sulfisoxazole = as.factor(sulfisoxazole))
+
+salm_amp_test <- as.data.frame(read_csv("report_data/salm_amp_test.csv")) %>%
+  mutate(ampicillin = as.factor(ampicillin))
+
+ecoli_tet_test <- as.data.frame(read_csv("report_data/ecoli_tet_test.csv")) %>%
+  mutate(tetracycline = as.factor(tetracycline))
+
+ecoli_mero_test <- as.data.frame(read_csv("report_data/ecoli_mero_test.csv")) %>%
+  mutate(meropenem = as.factor(meropenem))
+
+ecoli_cip_test <- as.data.frame(read_csv("report_data/ecoli_cip_test.csv")) %>%
+  mutate(ciprofloxacin = as.factor(ciprofloxacin))
+
+ecoli_amp_test <- as.data.frame(read_csv("report_data/ecoli_amp_test.csv")) %>%
+  mutate(ampicillin = as.factor(ampicillin))
+
+campy_tet_test <- as.data.frame(read_csv("report_data/campy_tet_test.csv")) %>%
+  mutate(tetracycline = as.factor(tetracycline))
+
+campy_gent_test <- as.data.frame(read_csv("report_data/campy_gent_test.csv")) %>%
+  mutate(gentamicin = as.factor(gentamicin))
+
+campy_ery_test <- as.data.frame(read_csv("report_data/campy_ery_test.csv")) %>%
+  mutate(erythromycin = erythromycin)
+
+campy_cip_test <- as.data.frame(read_csv("report_data/campy_cip_test.csv")) %>%
+  mutate(ciprofloxacin = as.factor(ciprofloxacin))
+
+
+
+
+```
+
+
+
+
+## Variable Selection
+
+Recall that we've identified the following covariates to be considered when predicting drug response for Salmonella enterica isolates: collection date, isolation type, minimum SNP distance to an isolate of the same isolation type, minimum SNP distance to an isolate of a different isolation type, serovar, country, isolation source, number of close isolates, antigen formula, drug susceptibility similarity to other isolates within the same cluster, and the presence or absence of 12 antimicrobial resistant genes within a given isolate for a total of 22 predictors.
+
+When predicting antibiotic response for E.coli and Campylobacter isolates we also consider collection date, isolation type, minimum SNP distance to an isolate of the same isolation type, minimum SNP distance to an isolate of a different isolation type, country, isolation source, number of close isolates, and drug susceptibility similarity to other isolates within the same cluster. Additionally, we consider a variable that numerically captures the drug \textit{resistance} similarity to other isolates within the same cluster, but unlike in Salmonella, we don't consider serovar and antigen formula due to that information only being retained on Salmonella isolates. Lastly, we consider the presence or absence of 13 antimicrobial resistant genes for a total of 22 predictors. The 13 antimicrobial resistant genes in consideration as predictors in these models are highlighted in \textbf{Table 1}.
+
+For our models containing only source predictors, we considered only the following covariates, kin to what the average person may be more likely to know about their own foodborne illness: collection date, isolation type, serovar, country, and isolation source. We decided to include serovar information in the 'source only' predictors because in our data, serovar information is often reduced to the geographical origin of illness, which may be known. Serovar information that isn't tied to a geographical origin on the other hand may be discovered through a doctor's appointment.
+
+
+
+\underline{Salmonella enterica}
+None of the variables within the salmonella dataset were deemed unimportant enough to exclude in any of the four random forest models considering both source and genetic predictors, i.e. all predictors (outcome tetracyline model, outcome streptomycin model, outcome ampicillin model, and outcome sulfisoxazole model). And so, during hyperparameter tuning, we consider all predictors in the data. 
+
+
+\underline{E.coli and Shigella}
+In predicting response to meropenem, the presence/absence of 7 antimicrobial resistant genes were deemed either unimportant (6) or tenetatively unimportant (1) so we decided to remove all 7 of those genes from being predictors in that model (bla_oxa_193_complete, x50s_122_a103v_point, gyr_a_t86i_point, bla_oxa_complete, tet_o_complete, aph_3_ii_ia_complete, and bla_ec_complete).
+
+
+In predicting antibiotic response to tetracycline in E.coli isolates, the presence/absence of 5 antimicrobial resistant genes were considered to be unimportant and were thus excluded in hyperparameter tuning and final model runs for E.coli: aph_3_ii_ia_complete, bla_oxa_193_complete, gyr_a_t86i_point, tet_o_complete, x50s_122_a103v_point. 
+
+
+In predicting antibiotic response to ampicillin and ciprofloxacin, the same 5 attributes were confirmed unimportant.
+
+
+\underline{Campylobacter jejuni}
+In predicting antibiotic response to tetracycline within Campylobacter isolates, seven antimicrobial resistant genes were deemed unimportant: acr_f_complete, aph_3_ib_complete, aph_6_id_complete, bla_ec_complete, mdt_m_complete, tet_a_complete, and sulf2_complete.
+
+The same seven genes were deemed unimportant in predicting gentamicin, erythromycin, and ciprofloxacin.
+
+
+
+
+
+```{r}
+
+
+class_prop_salm_tet <- as.vector(prop.table(table(salm_tet_train$tetracycline)))
+salm_tet_train_source <- salm_tet_train[, -c(3:4, 8:22)]
+
+class_prop_salm_strep <- as.vector(prop.table(table(salm_strep_train$streptomycin)))
+salm_strep_train_source <- salm_strep_train[, -c(3:4, 8:22)]
+
+class_prop_salm_sulf <- as.vector(prop.table(table(salm_sulf_train$sulfisoxazole)))
+salm_sulf_train_source <- salm_sulf_train[, -c(3:4, 8:22)]
+
+class_prop_salm_amp <- as.vector(prop.table(table(salm_amp_train$ampicillin)))
+salm_amp_train_source <- salm_amp_train[, -c(3:4, 8:22)]
+
+```
+
+
+```{r}
+
+# final salmonella models
+
+# tetracycline
+set.seed(1)
+rf_model_salm_tet <- ranger(
+  formula = tetracycline ~ .,
+  data = salm_tet_train,
+  mtry = 7,
+  num.trees = 250,
+  importance = "impurity",
+  class.weights = c(1/class_prop_salm_tet[1], 
+                    1/class_prop_salm_tet[2]),
+  probability = T
+)
+
+
+
+rf_model_salm_tet_s <- ranger(
+  formula = tetracycline ~ .,
+  data = salm_tet_train_source,
+  mtry = 2,
+  num.trees = 1000,
+  importance = "impurity",
+  class.weights = c(1/class_prop_salm_tet[1], 
+                    1/class_prop_salm_tet[2]),
+  probability = T
+)
+
+
+# streptomycin
+rf_model_salm_strep <- ranger(
+  formula = streptomycin ~ .,
+  data = salm_strep_train,
+  mtry = 11,
+  num.trees = 500,
+  importance = "impurity",
+  class.weights = c(1/class_prop_salm_strep[1], 
+                    1/class_prop_salm_strep[2]),
+  probability = T
+)
+
+
+rf_model_salm_strep_s <- ranger(
+  formula = streptomycin ~ .,
+  data = salm_strep_train_source,
+  mtry = 2,
+  num.trees = 1000,
+  importance = "impurity",
+  class.weights = c(1/class_prop_salm_strep[1], 
+                    1/class_prop_salm_strep[2]),
+  probability = T
+)
+
+
+# sulfisoxazole
+
+rf_model_salm_sulf <- ranger(
+  formula = sulfisoxazole ~ .,
+  data = salm_sulf_train,
+  mtry = 7,
+  num.trees = 500,
+  importance = "impurity",
+  class.weights = c(1/class_prop_salm_sulf[1], 
+                    1/class_prop_salm_sulf[2]),
+  probability = T
+)
+
+
+rf_model_salm_sulf_s <- ranger(
+  formula = sulfisoxazole ~ .,
+  data = salm_sulf_train_source,
+  mtry = 2,
+  num.trees = 250,
+  importance = "impurity",
+  class.weights = c(1/class_prop_salm_sulf[1], 
+                    1/class_prop_salm_sulf[2]),
+  probability = T
+)
+
+
+# ampicillin
+
+rf_model_salm_amp <- ranger(
+  formula = ampicillin ~ .,
+  data = salm_amp_train,
+  mtry = 11,
+  num.trees = 250,
+  importance = "impurity",
+  class.weights = c(1/class_prop_salm_amp[1], 
+                    1/class_prop_salm_amp[2]),
+  probability = T
+)
+
+
+rf_model_salm_amp_s <- ranger(
+  formula = ampicillin ~ .,
+  data = salm_amp_train_source,
+  mtry = 2,
+  num.trees = 250,
+  importance = "impurity",
+  class.weights = c(1/class_prop_salm_amp[1], 
+                    1/class_prop_salm_amp[2]),
+  probability = T
+)
+
+
+
+
+
+```
+
+
+
+
+
+```{r}
+# SALMONELLA performance metrics
+
+# tetra
+salm_tet_pred <- ifelse(predict(rf_model_salm_tet, 
+                         salm_tet_test)$predictions[, '1'] > 0.5, 1, 0)
+
+salm_tet_conf <- confusionMatrix(as.factor(salm_tet_pred), 
+                salm_tet_test$tetracycline,
+                positive = '1')
+
+salm_tet_auc <- auc(salm_tet_test$tetracycline,
+    as.numeric(salm_tet_pred))
+
+# tetra source
+
+salm_tet_pred_s <- ifelse(predict(rf_model_salm_tet_s, 
+                         salm_tet_test)$predictions[, '1'] > 0.5, 1, 0)
+
+salm_tet_conf_s <- confusionMatrix(as.factor(salm_tet_pred_s), 
+                salm_tet_test$tetracycline,
+                positive = '1')
+
+salm_tet_auc_s <- auc(salm_tet_test$tetracycline,
+    as.numeric(salm_tet_pred_s))
+
+
+# strep
+salm_strep_pred <- ifelse(predict(rf_model_salm_strep, 
+                         salm_strep_test)$predictions[, '1'] > 0.5, 1, 0)
+
+salm_strep_conf <- confusionMatrix(as.factor(salm_strep_pred), 
+                salm_strep_test$streptomycin,
+                positive = '1')
+
+salm_strep_auc <- auc(salm_strep_test$streptomycin,
+    as.numeric(salm_strep_pred))
+
+
+# strep source
+salm_strep_pred_s <- ifelse(predict(rf_model_salm_strep_s, 
+                         salm_strep_test)$predictions[, '1'] > 0.5, 1, 0)
+
+salm_strep_conf_s <- confusionMatrix(as.factor(salm_strep_pred_s), 
+                salm_strep_test$streptomycin,
+                positive = '1')
+
+salm_strep_auc_s <- auc(salm_strep_test$streptomycin,
+    as.numeric(salm_strep_pred_s))
+
+
+# sulf
+salm_sulf_pred <- ifelse(predict(rf_model_salm_sulf, 
+                         salm_sulf_test)$predictions[, '1'] > 0.5, 1, 0)
+
+salm_sulf_conf <- confusionMatrix(as.factor(salm_sulf_pred), 
+                salm_sulf_test$sulfisoxazole,
+                positive = '1')
+
+salm_sulf_auc <- auc(salm_sulf_test$sulfisoxazole,
+    as.numeric(salm_sulf_pred))
+
+
+# sulf source
+salm_sulf_pred_s <- ifelse(predict(rf_model_salm_sulf_s, 
+                         salm_sulf_test)$predictions[, '1'] > 0.5, 1, 0)
+
+salm_sulf_conf_s <- confusionMatrix(as.factor(salm_sulf_pred_s), 
+                salm_sulf_test$sulfisoxazole,
+                positive = '1')
+
+salm_sulf_auc_s <- auc(salm_sulf_test$sulfisoxazole,
+    as.numeric(salm_sulf_pred_s))
+
+
+# amp
+salm_amp_pred <- ifelse(predict(rf_model_salm_amp, 
+                         salm_amp_test)$predictions[, '1'] > 0.5, 1, 0)
+
+salm_amp_conf <- confusionMatrix(as.factor(salm_amp_pred), 
+                salm_amp_test$ampicillin,
+                positive = '1')
+
+salm_amp_auc <- auc(salm_amp_test$ampicillin,
+    as.numeric(salm_amp_pred))
+
+
+# amp source
+salm_amp_pred_s <- ifelse(predict(rf_model_salm_amp_s, 
+                         salm_amp_test)$predictions[, '1'] > 0.5, 1, 0)
+
+salm_amp_conf_s <- confusionMatrix(as.factor(salm_amp_pred_s), 
+                salm_amp_test$ampicillin,
+                positive = '1')
+
+salm_amp_auc_s <- auc(salm_amp_test$ampicillin,
+    as.numeric(salm_amp_pred_s))
+
+```
+
+
+
+
+```{r}
+
+class_prop_ecoli_tet <- as.vector(prop.table(table(ecoli_tet_train$tetracycline)))
+ecoli_tet_train_source <- ecoli_tet_train[, -c(3:4, 7:17)]
+
+class_prop_ecoli_mero <- as.vector(prop.table(table(ecoli_mero_train$meropenem)))
+ecoli_mero_train_source <- ecoli_mero_train[, -c(3:4, 7:15)]
+
+class_prop_ecoli_cip <- as.vector(prop.table(table(ecoli_cip_train$ciprofloxacin)))
+ecoli_cip_train_source <- ecoli_cip_train[, -c(3:4, 7:17)]
+
+class_prop_ecoli_amp <- as.vector(prop.table(table(ecoli_amp_train$ampicillin)))
+ecoli_amp_train_source <- ecoli_amp_train[, -c(3:4, 7:17)]
+
+
+```
+
+
+```{r}
+
+# final ecoli models
+
+# tetracycline
+set.seed(1)
+rf_model_ecoli_tet <- ranger(
+  formula = tetracycline ~ .,
+  data = ecoli_tet_train,
+  mtry = 2,
+  num.trees = 1000,
+  importance = "impurity",
+  class.weights = c(1/class_prop_ecoli_tet[1], 
+                    1/class_prop_ecoli_tet[2]),
+  probability = T
+)
+
+
+rf_model_ecoli_tet_s <- ranger(
+  formula = tetracycline ~ .,
+  data = ecoli_tet_train_source,
+  mtry = 2,
+  num.trees = 1000,
+  importance = "impurity",
+  class.weights = c(1/class_prop_ecoli_tet[1], 
+                    1/class_prop_ecoli_tet[2]),
+  probability = T
+)
+
+
+
+# meropenem
+rf_model_ecoli_mero <- ranger(
+  formula = meropenem ~ .,
+  data = ecoli_mero_train,
+  mtry = 11,
+  num.trees = 250,
+  importance = "impurity",
+  class.weights = c(1/class_prop_ecoli_mero[1], 
+                    1/class_prop_ecoli_mero[2]),
+  probability = T
+)
+
+
+rf_model_ecoli_mero_s <- ranger(
+  formula = meropenem ~ .,
+  data = ecoli_mero_train_source,
+  mtry = 2,
+  num.trees = 500,
+  importance = "impurity",
+  class.weights = c(1/class_prop_ecoli_mero[1], 
+                    1/class_prop_ecoli_mero[2]),
+  probability = T
+)
+
+
+# ciprofloxacin
+rf_model_ecoli_cip <- ranger(
+  formula = ciprofloxacin ~ .,
+  data = ecoli_cip_train,
+  mtry = 4,
+  num.trees = 500,
+  importance = "impurity",
+  class.weights = c(1/class_prop_ecoli_cip[1], 
+                    1/class_prop_ecoli_cip[2]),
+  probability = T
+)
+
+
+rf_model_ecoli_cip_s <- ranger(
+  formula = ciprofloxacin ~ .,
+  data = ecoli_cip_train_source,
+  mtry = 1,
+  num.trees = 1000,
+  importance = "impurity",
+  class.weights = c(1/class_prop_ecoli_cip[1], 
+                    1/class_prop_ecoli_cip[2]),
+  probability = T
+)
+
+
+
+# ampicillin
+rf_model_ecoli_amp <- ranger(
+  formula = ampicillin ~ .,
+  data = ecoli_amp_train,
+  mtry = 5,
+  num.trees = 1000,
+  importance = "impurity",
+  class.weights = c(1/class_prop_ecoli_amp[1], 
+                    1/class_prop_ecoli_amp[2]),
+  probability = T
+)
+
+
+rf_model_ecoli_amp_s <- ranger(
+  formula = ampicillin ~ .,
+  data = ecoli_amp_train_source,
+  mtry = 1,
+  num.trees = 250,
+  importance = "impurity",
+  class.weights = c(1/class_prop_ecoli_amp[1], 
+                    1/class_prop_ecoli_amp[2]),
+  probability = T
+)
+
+
+
+
+
+```
+
+
+
+
+```{r}
+# ECOLI performance metrics
+
+# tetra
+ecoli_tet_pred <- ifelse(predict(rf_model_ecoli_tet, 
+                         ecoli_tet_test)$predictions[, '1'] > 0.5, 1, 0)
+
+ecoli_tet_conf <- confusionMatrix(as.factor(ecoli_tet_pred), 
+                ecoli_tet_test$tetracycline,
+                positive = '1')
+
+ecoli_tet_auc <- auc(ecoli_tet_test$tetracycline,
+    as.numeric(ecoli_tet_pred))
+
+
+# tetra source
+
+ecoli_tet_pred_s <- ifelse(predict(rf_model_ecoli_tet_s, 
+                         ecoli_tet_test)$predictions[, '1'] > 0.5, 1, 0)
+
+ecoli_tet_conf_s <- confusionMatrix(as.factor(ecoli_tet_pred_s), 
+                ecoli_tet_test$tetracycline,
+                positive = '1')
+
+ecoli_tet_auc_s <- auc(ecoli_tet_test$tetracycline,
+    as.numeric(ecoli_tet_pred_s))
+
+
+# mero
+ecoli_mero_pred <- ifelse(predict(rf_model_ecoli_mero, 
+                         ecoli_mero_test)$predictions[, '1'] > 0.5, 1, 0)
+
+ecoli_mero_conf <- confusionMatrix(as.factor(ecoli_mero_pred), 
+                ecoli_mero_test$meropenem,
+                positive = '1')
+
+ecoli_mero_auc <- auc(ecoli_mero_test$meropenem,
+    as.numeric(ecoli_mero_pred))
+
+
+# mero source
+ecoli_mero_pred_s <- ifelse(predict(rf_model_ecoli_mero_s, 
+                         ecoli_mero_test)$predictions[, '1'] > 0.5, 1, 0)
+
+ecoli_mero_conf_s <- confusionMatrix(as.factor(ecoli_mero_pred_s), 
+                ecoli_mero_test$meropenem,
+                positive = '1')
+
+ecoli_mero_auc_s <- auc(ecoli_mero_test$meropenem,
+    as.numeric(ecoli_mero_pred_s))
+
+
+# cip
+ecoli_cip_pred <- ifelse(predict(rf_model_ecoli_cip, 
+                         ecoli_cip_test)$predictions[, '1'] > 0.5, 1, 0)
+
+ecoli_cip_conf <- confusionMatrix(as.factor(ecoli_cip_pred), 
+                ecoli_cip_test$ciprofloxacin,
+                positive = '1')
+
+ecoli_cip_auc <- auc(ecoli_cip_test$ciprofloxacin,
+    as.numeric(ecoli_cip_pred))
+
+
+# cip source
+ecoli_cip_pred_s <- ifelse(predict(rf_model_ecoli_cip_s, 
+                         ecoli_cip_test)$predictions[, '1'] > 0.5, 1, 0)
+
+ecoli_cip_conf_s <- confusionMatrix(as.factor(ecoli_cip_pred_s), 
+                ecoli_cip_test$ciprofloxacin,
+                positive = '1')
+
+ecoli_cip_auc_s <- auc(ecoli_cip_test$ciprofloxacin,
+    as.numeric(ecoli_cip_pred_s))
+
+
+# amp
+ecoli_amp_pred <- ifelse(predict(rf_model_ecoli_amp, 
+                         ecoli_amp_test)$predictions[, '1'] > 0.5, 1, 0)
+
+ecoli_amp_conf <- confusionMatrix(as.factor(ecoli_amp_pred), 
+                ecoli_amp_test$ampicillin,
+                positive = '1')
+
+ecoli_amp_auc <- auc(ecoli_amp_test$ampicillin,
+    as.numeric(ecoli_amp_pred))
+
+
+# amp source
+ecoli_amp_pred_s <- ifelse(predict(rf_model_ecoli_amp_s, 
+                         ecoli_amp_test)$predictions[, '1'] > 0.5, 1, 0)
+
+ecoli_amp_conf_s <- confusionMatrix(as.factor(ecoli_amp_pred_s), 
+                ecoli_amp_test$ampicillin,
+                positive = '1')
+
+ecoli_amp_auc_s <- auc(ecoli_amp_test$ampicillin,
+    as.numeric(ecoli_amp_pred_s))
+
+```
+
+```{r}
+
+class_prop_campy_tet <- as.vector(prop.table(table(campy_tet_train$tetracycline)))
+campy_tet_train_source <- campy_tet_train[, -c(3:4, 7:15)]
+
+class_prop_campy_gent <- as.vector(prop.table(table(campy_gent_train$gentamicin)))
+campy_gent_train_source <- campy_gent_train[, -c(3:4, 7:15)]
+
+class_prop_campy_ery <- as.vector(prop.table(table(campy_ery_train$erythromycin)))
+campy_ery_train_source <- campy_ery_train[, -c(3:4, 7:15)]
+
+class_prop_campy_cip <- as.vector(prop.table(table(campy_cip_train$ciprofloxacin)))
+campy_cip_train_source <- campy_cip_train[, -c(3:4, 7:15)]
+
+
+
+```
+
+
+
+```{r}
+
+# final campy models
+
+# tetracycline
+set.seed(1)
+rf_model_campy_tet <- ranger(
+  formula = tetracycline ~ .,
+  data = campy_tet_train,
+  mtry = 7,
+  num.trees = 250,
+  importance = "impurity",
+  class.weights = c(1/class_prop_campy_tet[1], 
+                    1/class_prop_campy_tet[2]),
+  probability = T
+)
+
+
+rf_model_campy_tet_s <- ranger(
+  formula = tetracycline ~ .,
+  data = campy_tet_train_source,
+  mtry = 2,
+  num.trees = 250,
+  importance = "impurity",
+  class.weights = c(1/class_prop_campy_tet[1], 
+                    1/class_prop_campy_tet[2]),
+  probability = T
+)
+
+
+
+# gent
+rf_model_campy_gent <- ranger(
+  formula = gentamicin ~ .,
+  data = campy_gent_train,
+  mtry = 5,
+  num.trees = 250,
+  importance = "impurity",
+  class.weights = c(1/class_prop_campy_gent[1], 
+                    1/class_prop_campy_gent[2]),
+  probability = T
+)
+
+
+rf_model_campy_gent_s <- ranger(
+  formula = gentamicin ~ .,
+  data = campy_gent_train_source,
+  mtry = 2,
+  num.trees = 500,
+  importance = "impurity",
+  class.weights = c(1/class_prop_campy_gent[1], 
+                    1/class_prop_campy_gent[2]),
+  probability = T
+)
+
+
+# ciprofloxacin
+rf_model_campy_cip <- ranger(
+  formula = ciprofloxacin ~ .,
+  data = campy_cip_train,
+  mtry = 5,
+  num.trees = 1000,
+  importance = "impurity",
+  class.weights = c(1/class_prop_campy_cip[1], 
+                    1/class_prop_campy_cip[2]),
+  probability = T
+)
+
+
+rf_model_campy_cip_s <- ranger(
+  formula = ciprofloxacin ~ .,
+  data = campy_cip_train_source,
+  mtry = 1,
+  num.trees = 250,
+  importance = "impurity",
+  class.weights = c(1/class_prop_campy_cip[1], 
+                    1/class_prop_campy_cip[2]),
+  probability = T
+)
+
+
+
+# erythromycin
+rf_model_campy_ery <- ranger(
+  formula = erythromycin ~ .,
+  data = campy_ery_train,
+  mtry = 3,
+  num.trees = 500,
+  importance = "impurity",
+  class.weights = c(1/class_prop_campy_ery[1], 
+                    1/class_prop_campy_ery[2]),
+  probability = T
+)
+
+
+rf_model_campy_ery_s <- ranger(
+  formula = erythromycin ~ .,
+  data = campy_ery_train_source,
+  mtry = 1,
+  num.trees = 500,
+  importance = "impurity",
+  class.weights = c(1/class_prop_campy_ery[1], 
+                    1/class_prop_campy_ery[2]),
+  probability = T
+)
+
+
+
+
+
+```
+
+
+
+```{r}
+# CAMPY performance metrics
+
+# tetra
+campy_tet_pred <- ifelse(predict(rf_model_campy_tet, 
+                         campy_tet_test)$predictions[, '1'] > 0.5, 1, 0)
+
+campy_tet_conf <- confusionMatrix(as.factor(campy_tet_pred), 
+                as.factor(campy_tet_test$tetracycline),
+                positive = '1')
+
+
+campy_tet_auc <- auc(campy_tet_test$tetracycline,
+    as.numeric(campy_tet_pred))
+
+
+# tetra source
+
+campy_tet_pred_s <- ifelse(predict(rf_model_campy_tet_s, 
+                         campy_tet_test)$predictions[, '1'] > 0.5, 1, 0)
+
+campy_tet_conf_s <- confusionMatrix(as.factor(campy_tet_pred_s), 
+                as.factor(campy_tet_test$tetracycline),
+                positive = '1')
+
+campy_tet_auc_s <- auc(campy_tet_test$tetracycline,
+    as.numeric(campy_tet_pred_s))
+
+
+# gent
+campy_gent_pred <- ifelse(predict(rf_model_campy_gent, 
+                         campy_gent_test)$predictions[, '1'] > 0.5, 1, 0)
+
+campy_gent_conf <- confusionMatrix(as.factor(campy_gent_pred), 
+                as.factor(campy_gent_test$gentamicin),
+                positive = '1')
+
+campy_gent_auc <- auc(campy_gent_test$gentamicin,
+    as.numeric(campy_gent_pred))
+
+
+# gent source
+campy_gent_pred_s <- ifelse(predict(rf_model_campy_gent_s, 
+                         campy_gent_test)$predictions[, '1'] > 0.5, 1, 0)
+
+campy_gent_conf_s <- confusionMatrix(as.factor(campy_gent_pred_s), 
+                campy_gent_test$gentamicin,
+                positive = '1')
+
+campy_gent_auc_s <- auc(campy_gent_test$gentamicin,
+    as.numeric(campy_gent_pred_s))
+
+
+# cip
+campy_cip_pred <- ifelse(predict(rf_model_campy_cip, 
+                         campy_cip_test)$predictions[, '1'] > 0.5, 1, 0)
+
+campy_cip_conf <- confusionMatrix(as.factor(campy_cip_pred), 
+                as.factor(campy_cip_test$ciprofloxacin),
+                positive = '1')
+
+campy_cip_auc <- auc(campy_cip_test$ciprofloxacin,
+    as.numeric(campy_cip_pred))
+
+
+# cip source
+campy_cip_pred_s <- ifelse(predict(rf_model_campy_cip_s, 
+                         campy_cip_test)$predictions[, '1'] > 0.5, 1, 0)
+
+campy_cip_conf_s <- confusionMatrix(as.factor(campy_cip_pred_s), 
+                as.factor(campy_cip_test$ciprofloxacin),
+                positive = '1')
+
+campy_cip_auc_s <- auc(campy_cip_test$ciprofloxacin,
+    as.numeric(campy_cip_pred_s))
+
+
+# ery
+campy_ery_pred <- ifelse(predict(rf_model_campy_ery, 
+                         campy_ery_test)$predictions[, '1'] > 0.5, 1, 0)
+
+campy_ery_conf <- confusionMatrix(as.factor(campy_ery_pred), 
+                as.factor(campy_ery_test$erythromycin),
+                positive = '1')
+
+campy_ery_auc <- auc(campy_ery_test$erythromycin,
+    as.numeric(campy_ery_pred))
+
+
+# ery source
+campy_ery_pred_s <- ifelse(predict(rf_model_campy_ery_s, 
+                         campy_ery_test)$predictions[, '1'] > 0.5, 1, 0)
+
+campy_ery_conf_s <- confusionMatrix(as.factor(campy_ery_pred_s), 
+                as.factor(campy_ery_test$erythromycin),
+                positive = '1')
+
+campy_ery_auc_s <- auc(campy_ery_test$erythromycin,
+    as.numeric(campy_ery_pred_s))
+
+```
+
+
+## Test Set Performance
+
+After hyperparameter tuning (see Appendix), we assessed the performance of our models on testing sets for each species of interest (\textbf{Table 2}).
+
+\begin{table}[hbtp]
+\centering
+\caption{Model Performance on Test Sets for Salmonella, E.coli, and Campylobacter}  
+\includegraphics[width=18cm, height=24cm, keepaspectratio]{report_figures/test_performance.png}
+\end{table}
+
+Overall, our all models containing both source and genetic predictors performed exceptionally well on our test data. Most models including genetic predictors obtained accuracy, sensitivity, specificity, and area under the ROC curve values of over 0.90, which shows great performance and utility. As the goal of the project is to create a recommendation system to apply to new cases of these species, we may want to prioritize sensitivity over accuracy or specificity since we want to reliably recommend an antibiotic that that new case would be susceptible to (susceptibility being defined as the positive '1' class in our models). Thus, using average sensitivity as a benchmark, our models for Campylobacter jejuni and Salmonella enterica perform the best with E.coli and Shigella not too far behind at an average of 0.96. Evidently, it seems that the models containing both source and genetic predictors may perform nearly perfectly, insinuating that there is information contained in these models that are highly correlated with the outcomes of antibiotic response.
+
+As a result of this, we decided to investigate alternative models that included only 'source' predictors, i.e. reducing the predictor subspace down to just 5 variables in the salmonella models (serovar, collection date, isolation type, country, and isolation source) and 4 variables in both the E.coli and Campylobacter models (collection date, isolation type, country, and isolation source due to serovar information not being retained on E.coli and Campylobacter isolates). We also treat this scenario to be more aligned with the kind of information that we would except the average person to have about their case if they suspect they've contracted one of these foodborne illnesses, as well as the kind of information that would be easily accessible without having to go through the potentially tedious process of clinical testing to find genetic specific information. The question of interest then becomes: how accurate and useful can these models still be in the absence of less attainable genetic information? If we were to build a recommendation system for more public but safe use, can our models still be reliable to the average person?
+
+The results of our 'source only' models are bold in \textbf{Table 2}. Notably, removing the genetically associated predictors from our model generally decreases performance, but despite that, these models still relatively perform well. Taking sensitivity as the primary metric of interest, the 'source only' models for Salmonella perform the best with an average sensitivity of 0.82, followed by the models for E.coli with an average sensitivity of 0.77, and lastly our models for Campylobacter with an average sensitivity of 0.76. We observed and compared the variables most integral to predicting response in these antibiotics.
+
+
+## Variable Importance
+
+
+```{r}
+
+# extract top 5 most important covariates
+
+salm_imp_tet <- as.data.frame(cbind(gini_importance = rf_model_salm_tet$variable.importance, var = names(importance(rf_model_salm_tet)))) %>%
+  mutate(gini_importance = as.numeric(gini_importance)) %>%
+  arrange(desc(gini_importance)) %>%
+  head(5)
+
+salm_imp_strep <- as.data.frame(cbind(gini_importance = rf_model_salm_strep$variable.importance, var = names(importance(rf_model_salm_strep)))) %>%
+  mutate(gini_importance = as.numeric(gini_importance)) %>%
+  arrange(desc(gini_importance)) %>%
+  head(5)
+
+salm_imp_sulf <-  as.data.frame(cbind(gini_importance = rf_model_salm_sulf$variable.importance, var = names(importance(rf_model_salm_sulf)))) %>%
+  mutate(gini_importance = as.numeric(gini_importance)) %>%
+  arrange(desc(gini_importance)) %>%
+  head(5)
+
+salm_imp_amp <-  as.data.frame(cbind(gini_importance = rf_model_salm_amp$variable.importance, var = names(importance(rf_model_salm_amp)))) %>%
+  mutate(gini_importance = as.numeric(gini_importance)) %>%
+  arrange(desc(gini_importance)) %>%
+  head(5)
+
+
+# ecoli 
+
+ecoli_imp_tet <- as.data.frame(cbind(gini_importance = rf_model_ecoli_tet$variable.importance, var = names(importance(rf_model_ecoli_tet)))) %>%
+  mutate(gini_importance = as.numeric(gini_importance)) %>%
+  arrange(desc(gini_importance)) %>%
+  head(5)
+
+ecoli_imp_mero <- as.data.frame(cbind(gini_importance = rf_model_ecoli_mero$variable.importance, var = names(importance(rf_model_ecoli_mero)))) %>%
+  mutate(gini_importance = as.numeric(gini_importance)) %>%
+  arrange(desc(gini_importance)) %>%
+  head(5)
+
+ecoli_imp_cip <- as.data.frame(cbind(gini_importance = rf_model_ecoli_cip$variable.importance, var = names(importance(rf_model_ecoli_cip)))) %>%
+  mutate(gini_importance = as.numeric(gini_importance)) %>%
+  arrange(desc(gini_importance)) %>%
+  head(5)
+
+ecoli_imp_amp <- as.data.frame(cbind(gini_importance = rf_model_ecoli_amp$variable.importance, var = names(importance(rf_model_ecoli_amp)))) %>%
+  mutate(gini_importance = as.numeric(gini_importance)) %>%
+  arrange(desc(gini_importance)) %>%
+  head(5)
+
+
+# campy
+campy_imp_tet <- as.data.frame(cbind(gini_importance = rf_model_campy_tet$variable.importance, var = names(importance(rf_model_campy_tet)))) %>%
+  mutate(gini_importance = as.numeric(gini_importance)) %>%
+  arrange(desc(gini_importance)) %>%
+  head(5)
+
+campy_imp_gent <- as.data.frame(cbind(gini_importance = rf_model_campy_gent$variable.importance, var = names(importance(rf_model_campy_gent)))) %>%
+  mutate(gini_importance = as.numeric(gini_importance)) %>%
+  arrange(desc(gini_importance)) %>%
+  head(5)
+
+campy_imp_cip <- as.data.frame(cbind(gini_importance = rf_model_campy_cip$variable.importance, var = names(importance(rf_model_campy_cip)))) %>%
+  mutate(gini_importance = as.numeric(gini_importance)) %>%
+  arrange(desc(gini_importance)) %>%
+  head(5)
+
+campy_imp_ery <- as.data.frame(cbind(gini_importance = rf_model_campy_ery$variable.importance, var = names(importance(rf_model_campy_ery)))) %>%
+  mutate(gini_importance = as.numeric(gini_importance)) %>%
+  arrange(desc(gini_importance)) %>%
+  head(5)
+
+
+```
+
+
+```{r}
+
+# extract top 5 most important covariates
+
+salm_imp_tet_nogene <- as.data.frame(cbind(gini_importance = rf_model_salm_tet_s$variable.importance, var = names(importance(rf_model_salm_tet_s)))) %>%
+  mutate(gini_importance = as.numeric(gini_importance)) %>%
+  arrange(desc(gini_importance)) %>%
+  head(5)
+
+salm_imp_strep_nogene <- as.data.frame(cbind(gini_importance = rf_model_salm_strep_s$variable.importance, var = names(importance(rf_model_salm_strep_s)))) %>%
+  mutate(gini_importance = as.numeric(gini_importance)) %>%
+  arrange(desc(gini_importance)) %>%
+  head(5)
+
+salm_imp_sulf_nogene <- as.data.frame(cbind(gini_importance = rf_model_salm_sulf_s$variable.importance, var = names(importance(rf_model_salm_sulf_s)))) %>%
+  mutate(gini_importance = as.numeric(gini_importance)) %>%
+  arrange(desc(gini_importance)) %>%
+  head(5)
+
+salm_imp_amp_nogene <- as.data.frame(cbind(gini_importance = rf_model_salm_amp_s$variable.importance, var = names(importance(rf_model_salm_amp_s)))) %>%
+  mutate(gini_importance = as.numeric(gini_importance)) %>%
+  arrange(desc(gini_importance)) %>%
+  head(5)
+
+
+# ecoli
+ecoli_imp_tet_nogene <- as.data.frame(cbind(gini_importance = rf_model_ecoli_tet_s$variable.importance, var = names(importance(rf_model_ecoli_tet_s)))) %>%
+  mutate(gini_importance = as.numeric(gini_importance)) %>%
+  arrange(desc(gini_importance)) %>%
+  head(5)
+
+
+ecoli_imp_mero_nogene <- as.data.frame(cbind(gini_importance = rf_model_ecoli_mero_s$variable.importance, var = names(importance(rf_model_ecoli_mero_s)))) %>%
+  mutate(gini_importance = as.numeric(gini_importance)) %>%
+  arrange(desc(gini_importance)) %>%
+  head(5)
+
+ecoli_imp_cip_nogene <- as.data.frame(cbind(gini_importance = rf_model_ecoli_cip_s$variable.importance, var = names(importance(rf_model_ecoli_cip_s)))) %>%
+  mutate(gini_importance = as.numeric(gini_importance)) %>%
+  arrange(desc(gini_importance)) %>%
+  head(5)
+
+ecoli_imp_amp_nogene <- as.data.frame(cbind(gini_importance = rf_model_ecoli_amp_s$variable.importance, var = names(importance(rf_model_ecoli_amp_s)))) %>%
+  mutate(gini_importance = as.numeric(gini_importance)) %>%
+  arrange(desc(gini_importance)) %>%
+  head(5)
+
+
+# campy
+campy_imp_tet_nogene <- as.data.frame(cbind(gini_importance = rf_model_campy_tet_s$variable.importance, var = names(importance(rf_model_campy_tet_s)))) %>%
+  mutate(gini_importance = as.numeric(gini_importance)) %>%
+  arrange(desc(gini_importance)) %>%
+  head(5)
+
+
+campy_imp_gent_nogene <- as.data.frame(cbind(gini_importance = rf_model_campy_gent_s$variable.importance, var = names(importance(rf_model_campy_gent_s)))) %>%
+  mutate(gini_importance = as.numeric(gini_importance)) %>%
+  arrange(desc(gini_importance)) %>%
+  head(5)
+
+campy_imp_cip_nogene <- as.data.frame(cbind(gini_importance = rf_model_campy_cip_s$variable.importance, var = names(importance(rf_model_campy_cip_s)))) %>%
+  mutate(gini_importance = as.numeric(gini_importance)) %>%
+  arrange(desc(gini_importance)) %>%
+  head(5)
+
+
+campy_imp_ery_nogene <- as.data.frame(cbind(gini_importance = rf_model_campy_ery_s$variable.importance, var = names(importance(rf_model_campy_ery_s)))) %>%
+  mutate(gini_importance = as.numeric(gini_importance)) %>%
+  arrange(desc(gini_importance)) %>%
+  head(5)
+
+
+
+
+```
+
+
+
+```{r}
+
+salm_imp_amp <- salm_imp_amp %>%
+  mutate(var = ifelse(var == "antigen_formula_new",
+            "antigen_formula", var))
+
+ecoli_imp_amp <- ecoli_imp_amp %>%
+  mutate(var = ifelse(var == "isolation_source_new",
+                      "isolation_source", var))
+
+
+ecoli_imp_tet <- ecoli_imp_tet %>%
+  mutate(var = ifelse(var == "isolation_source_new",
+                      "isolation_source", var))
+
+ecoli_imp_cip <- ecoli_imp_cip %>%
+  mutate(var = ifelse(var == "isolation_source_new",
+                      "isolation_source", var))
+
+
+campy_imp_tet <- campy_imp_tet %>%
+  mutate(var = ifelse(var == "isolation_source_new",
+                      "isolation_source", var))
+
+campy_imp_ery <- campy_imp_ery %>%
+  mutate(var = ifelse(var == "isolation_source_new",
+                      "isolation_source", var))
+
+campy_imp_gent <- campy_imp_gent %>%
+  mutate(var = ifelse(var == "isolation_source_new",
+                      "isolation_source", var))
+
+
+# no gene importance
+
+salm_imp_tet_nogene <- salm_imp_tet_nogene %>%
+  mutate(var = ifelse(var == "isolation_source_new",
+                      "isolation_source", 
+                      ifelse(var == "serovar_new", "serovar", var)))
+
+salm_imp_amp_nogene <- salm_imp_amp_nogene %>%
+  mutate(var = ifelse(var == "isolation_source_new",
+                      "isolation_source", 
+                      ifelse(var == "serovar_new", "serovar", var)))
+
+salm_imp_strep_nogene <- salm_imp_strep_nogene %>%
+  mutate(var = ifelse(var == "isolation_source_new",
+                      "isolation_source", 
+                      ifelse(var == "serovar_new", "serovar", var)))
+
+salm_imp_sulf_nogene <- salm_imp_sulf_nogene %>%
+  mutate(var = ifelse(var == "isolation_source_new",
+                      "isolation_source", 
+                      ifelse(var == "serovar_new", "serovar", var)))
+
+ecoli_imp_amp_nogene <- ecoli_imp_amp_nogene %>%
+  mutate(var = ifelse(var == "isolation_source_new",
+                      "isolation_source", 
+                      ifelse(var == "serovar_new", "serovar", var)))
+
+ecoli_imp_cip_nogene <- ecoli_imp_cip_nogene %>%
+  mutate(var = ifelse(var == "isolation_source_new",
+                      "isolation_source", 
+                      ifelse(var == "serovar_new", "serovar", var)))
+
+ecoli_imp_mero_nogene <- ecoli_imp_mero_nogene %>%
+  mutate(var = ifelse(var == "isolation_source_new",
+                      "isolation_source", 
+                      ifelse(var == "serovar_new", "serovar", var)))
+
+ecoli_imp_tet_nogene <- ecoli_imp_tet_nogene %>%
+  mutate(var = ifelse(var == "isolation_source_new",
+                      "isolation_source", 
+                      ifelse(var == "serovar_new", "serovar", var)))
+
+campy_imp_cip_nogene <- campy_imp_cip_nogene %>%
+  mutate(var = ifelse(var == "isolation_source_new",
+                      "isolation_source", 
+                      ifelse(var == "serovar_new", "serovar", var)))
+
+campy_imp_ery_nogene <- campy_imp_ery_nogene %>%
+  mutate(var = ifelse(var == "isolation_source_new",
+                      "isolation_source", 
+                      ifelse(var == "serovar_new", "serovar", var)))
+
+campy_imp_gent_nogene <- campy_imp_gent_nogene %>%
+  mutate(var = ifelse(var == "isolation_source_new",
+                      "isolation_source", 
+                      ifelse(var == "serovar_new", "serovar", var)))
+
+campy_imp_tet_nogene <- campy_imp_tet_nogene %>%
+  mutate(var = ifelse(var == "isolation_source_new",
+                      "isolation_source", 
+                      ifelse(var == "serovar_new", "serovar", var)))
+
+```
+
+
+
+
+
+
+\begin{figure}[hbtp]
+\centering
+\caption{Top 5 Most Imporant Variables in Models for Salmonella}  
+\includegraphics[width=18cm, height=18cm, keepaspectratio]{report_figures/salm_imp_plot.png}
+\end{figure}
+
+
+\begin{figure}[hbtp]
+\centering
+\caption{Top 5 Most Imporant Variables in Models for E.coli}  
+\includegraphics[width=18cm, height=18cm, keepaspectratio]{report_figures/ecoli_imp_plot.png}
+\end{figure}
+
+
+\begin{figure}[hbtp]
+\centering
+\caption{Top 5 Most Imporant Variables in Models for Campylobacter}  
+\includegraphics[width=18cm, height=18cm, keepaspectratio]{report_figures/campy_imp_plot.png}
+\end{figure}
+
+
+
+
+\underline{Salmonella enterica}
+
+\textbf{Figure 1} highlights the top 5 most important variables in all of the classification models for the Salmonella isolates, both for source and genetic predictors, and source predictors only. The variable importance results for all source and genetic predictor models are consistent in the fact that the top two most important variables are indicator variables for the presence or absence of antimicrobial resistant genes. More specifically, in predicting for susceptibility/resistance to tetracycline, the TET genes are most important to classification. The APH genes are most important to predicting response to streptomycin. The SUL2 genes are most important to predicting Sulfisoxazole, and the BLA genes are most important to classifying response to Ampicillin. When the genetic predictors are removed however, we see a consistent pattern of important variables for all 4 of the antibiotics of interest. Serovar information is most important and related to outcomes. This is followed by collection date, isolation source, isolation type, and country.
+
+
+\textbf{Figure 2} highlights similar information as \textbf{Figure 1} but for E.coli isolates' responses to the four most common antibiotics reported on for E.coli. While the TET and APH genes rank as the top 2 predictors for Tetracycline, in the source and genetic models for Ciprofloxacin, Meropenem, and Ampicillin, the absence/presence of antimicrobial resistant genes are not as important. In fact, the most important factors in these models share more similarities to the most important factors in their corresponding source predictors only models. In predicting response to Meropenem, country and collection date are particularly important. For Ampicillin, isolation source and isolation type are particularly important.
+
+
+\textbf{Figure 3} displays the most important covariates for the models involving the Campylobacter isolates. We observe the same pattern in predicting response to Tetracycline where information on the absence/presence of the TET and APH antimicrobial resistant genes are most important to prediction. In predicting susceptibility/resistance for Ciprofloxacin, the GYR gene seems to be very important, and at a much greater magnitude than all of the other predictors in the model. In predicting for both Gentamicin and Erythromycin, two of the variables that we created based on our data proved to be most important: the numeric evaluation of how similar the antibiotics that isolates are susceptible to within the same cluster are, and the numeric evaluation of how similar the antibiotics that isolates are resistant to within the same cluster are. In the models only concerning the source predictors, all but the model for tetracycline follow the importance pattern of isolation source, collection date, country, and isolation type. 
+
+
+Since serovar (within Salmonella isolates), isolation source and collection date are most often ranked as being the most important in source only models, we chose to briefly investigate under the hood to see if we could quantify the relationships between these variables and response to tetracycline in all three of our species. Recall that we investigate this using logistic regression on our training data sets for all three species. 
+
+
+## Logistic Regression Results
+
+```{r}
+
+log_salm <- glm(tetracycline ~ collection_date + serovar_new + isolation_source_new,  
+    data = salm_tet_train_source, family = "binomial")
+
+log_ecoli <- glm(tetracycline ~ collection_date + isolation_source_new,  
+    data = ecoli_tet_train_source, family = "binomial")
+
+log_campy <- glm(tetracycline ~ collection_date + isolation_source_new,  
+    data = campy_tet_train_source, family = "binomial")
+
+```
+
+
+\begin{table}[hbtp]
+\centering
+\caption{Logistic Regression Results on Antibioitic Response to Tetracycline for Salmonella, E.coli, and Campylobacter isolates. Displays the multiplicative odds of having a susceptible response to Tetracycline.}  
+\includegraphics[width=16cm, height=18cm, keepaspectratio]{report_figures/log_reg_results.png}
+\end{table}
+
+\textbf{Table 3} displays the multiplicative odds constant associated with each variable of interest. Note that while isolation source and serovar are categorical variables and thus are indicators in nature, collection date is a continuous variable and so the odds constant represents with each 1-year increase, how much the odds of an isolate having a susceptible response is multiplied by. Values above 1 increase the odds while values less than 1 decrease the odds. 
+
+
+Most notably, serovar Enteritidis, and a stool isolation source have the largest \textit{significant} magnitude of effect on the odds. While serovar Enteritidis drastically increases the odds of Salmonella isolates being susceptible to tetracycline, a stool isolation source decreases the odds the most, though not nearly as drastically. Additionally, the more recent the year, the slightly lower the odds of responding susceptibly to tetracycline. 
+
+In the E.coli isolates, having a turkey isolation source lowers the odds of being susceptible to tetracycline the most, although an isolation source of stool or water have similar effects in terms of magnitude and direction.
+
+Lastly, in the Campylobacter isolates, an isolation source of stool greatly increases the odds that the isolate will respond favorably to tetracycline.
+
+
+## Recommendation System
+
+We next moved on to developing our antibiotic recommendation system. The system receives information about a new case as well as the species of that new case and pops out a recommendation based on the antibiotics that we have built models for, for each species. Recall that for each isolate, the antibiotic with predicted to have a susceptible response with the highest probability, will be the primary recommendation.If none of the drugs are predicted to garner a susceptible response, the system returns "No susceptibility". We used the test data to illustrate the utility of this system.
+
+For each isolate that it is fed, the algorithm recommends two antibiotics, one decided on by the source and genetic predictor model for that corresponding species, and the other decided by the source only model.
+
+
+\textbf{Table 4} picked 3 random isolates from each species that were fed into the algorithm and displays their recommendation results. From this table, we see examples of when the source and genetic models would agree, and when they would disagree. We compared the agreement between the source and genetic models and the source only models by finding the proportion of cases where the models agreed on the primary antibiotic recommendation for each species. For salmonella isolates, the two models agreed on ~41% of cases. For E.coli isolates, the two models agreed ~94% of the time, a huge leap in improvement from the salmonella isolates. Finally, the models on the Campylobacter isolates agreed ~84% of the time.
+
+
+```{r}
+
+
+# code recommendation system
+
+recommend_source_genetic <- function(new_data, species) {
+  
+  new_data_temp <- new_data
+  
+  if (species == "salmonella")
+  {
+    
+    new_data_temp$tet_prob <- predict(rf_model_salm_tet, new_data)$predictions[, '1']
+    new_data_temp$tet_prob_source <- predict(rf_model_salm_tet_s, new_data)$predictions[, '1']
+    new_data_temp$strep_prob <- predict(rf_model_salm_strep, new_data)$predictions[, '1']
+    new_data_temp$strep_prob_source <- predict(rf_model_salm_strep_s, new_data)$predictions[, '1']
+    new_data_temp$sulf_prob <- predict(rf_model_salm_sulf, new_data)$predictions[, '1']
+    new_data_temp$sulf_prob_source <- predict(rf_model_salm_sulf_s, new_data)$predictions[, '1']
+    new_data_temp$amp_prob <- predict(rf_model_salm_amp, new_data)$predictions[, '1']
+    new_data_temp$amp_prob_source <- predict(rf_model_salm_amp_s, new_data)$predictions[, '1']
+  
+   
+    
+    
+  new_data_choose_gs <- new_data_temp %>%
+    mutate(genetic_source_pred = 
+               
+               ifelse(tet_prob < 0.5 & strep_prob < 0.5 &
+                                           sulf_prob < 0.5 & amp_prob < 0.5,
+                                         "No susceptibility",
+                          ifelse(strep_prob >= sulf_prob &
+                                  strep_prob >= tet_prob & 
+                                   strep_prob >= amp_prob,
+                                                "Streptomycin",
+                        ifelse(sulf_prob >= tet_prob & 
+                              sulf_prob >= amp_prob &
+                                sulf_prob >= strep_prob,
+                                                  "Sulfisoxazole",
+                      ifelse(tet_prob >= sulf_prob & 
+                               tet_prob >= strep_prob &
+                                tet_prob >= amp_prob,
+                             "Tetracycline",
+                                    "Ampicillin")))),
+
+             source_only_ans =  ifelse(tet_prob_source < 0.5 & strep_prob_source < 0.5 &
+                                           sulf_prob_source < 0.5 & amp_prob_source < 0.5,
+                                         "No susceptibility",
+                          ifelse(strep_prob_source >= sulf_prob_source &
+                                  strep_prob_source >= tet_prob_source & 
+                                   strep_prob_source >= amp_prob_source,
+                                                "Streptomycin",
+                        ifelse(sulf_prob_source >= tet_prob_source & 
+                              sulf_prob_source >= amp_prob_source &
+                                sulf_prob_source >= strep_prob_source,
+                                                  "Sulfisoxazole",
+                      ifelse(tet_prob_source >= sulf_prob_source & 
+                               tet_prob_source >= strep_prob_source &
+                                tet_prob_source >= amp_prob_source,
+                             "Tetracycline",
+                                    "Ampicillin")))))
+    
+  }
+  
+  
+  
+  else if (grepl("coli", tolower(species)))
+  {
+    
+    
+    new_data_temp$tet_prob <- predict(rf_model_ecoli_tet, new_data)$predictions[, '1']
+    new_data_temp$tet_prob_source <- predict(rf_model_ecoli_tet_s, new_data)$predictions[, '1']
+    new_data_temp$cip_prob <- predict(rf_model_ecoli_cip, new_data)$predictions[, '1']
+    new_data_temp$cip_prob_source <- predict(rf_model_ecoli_cip_s, new_data)$predictions[, '1']
+    new_data_temp$mero_prob <- predict(rf_model_ecoli_mero, new_data)$predictions[, '1']
+    new_data_temp$mero_prob_source <- predict(rf_model_ecoli_mero_s, new_data)$predictions[, '1']
+    new_data_temp$amp_prob <- predict(rf_model_ecoli_amp, new_data)$predictions[, '1']
+    new_data_temp$amp_prob_source <- predict(rf_model_ecoli_amp_s, new_data)$predictions[, '1']
+  
+   
+    # cip, mero, amp, tet
+    
+  new_data_choose_gs <- new_data_temp %>%
+    mutate(genetic_source_pred = 
+               
+               ifelse(tet_prob < 0.5 & cip_prob < 0.5 &
+                                           mero_prob < 0.5 & amp_prob < 0.5,
+                                         "No susceptibility",
+                          ifelse(cip_prob >= mero_prob &
+                                  cip_prob >= tet_prob & 
+                                   cip_prob >= amp_prob,
+                                                "Ciprofloxacin",
+                        ifelse(mero_prob >= tet_prob & 
+                              mero_prob >= amp_prob &
+                                mero_prob >= cip_prob,
+                                                  "Meropenem",
+                      ifelse(amp_prob >= tet_prob & 
+                               amp_prob >= mero_prob &
+                                amp_prob >= cip_prob,
+                             "Ampicillin",
+                                    "Tetracycline")))),
+
+   source_only_ans =          ifelse(tet_prob_source < 0.5 & cip_prob_source < 0.5 &
+                                           mero_prob_source < 0.5 & amp_prob_source < 0.5,
+                                         "No susceptibility",
+                          ifelse(cip_prob_source >= mero_prob_source &
+                                  cip_prob_source >= tet_prob_source & 
+                                   cip_prob_source >= amp_prob_source,
+                                                "Ciprofloxacin",
+                        ifelse(mero_prob_source >= tet_prob_source & 
+                              mero_prob_source >= amp_prob_source &
+                                mero_prob_source >= cip_prob_source,
+                                                  "Meropenem",
+                      ifelse(amp_prob_source >= tet_prob_source & 
+                               amp_prob_source >= mero_prob_source &
+                                amp_prob_source >= cip_prob_source,
+                             "Ampicillin",
+                                    "Tetracycline")))))
+
+
+    
+    
+  }
+  
+  
+    
+  else if (grepl("campy", tolower(species)))
+  {
+    
+    new_data_temp$tet_prob <- predict(rf_model_campy_tet, new_data)$predictions[, '1']
+    new_data_temp$tet_prob_source <- predict(rf_model_campy_tet_s, new_data)$predictions[, '1']
+    new_data_temp$cip_prob <- predict(rf_model_campy_cip, new_data)$predictions[, '1']
+    new_data_temp$cip_prob_source <- predict(rf_model_campy_cip_s, new_data)$predictions[, '1']
+    new_data_temp$gent_prob <- predict(rf_model_campy_gent, new_data)$predictions[, '1']
+    new_data_temp$gent_prob_source <- predict(rf_model_campy_gent_s, new_data)$predictions[, '1']
+    new_data_temp$ery_prob <- predict(rf_model_campy_ery, new_data)$predictions[, '1']
+    new_data_temp$ery_prob_source <- predict(rf_model_campy_ery_s, new_data)$predictions[, '1']
+  
+   
+    # gent, ery, tet, cip
+    
+  new_data_choose_gs <- new_data_temp %>%
+    mutate(genetic_source_pred = 
+               
+               ifelse(tet_prob < 0.5 & cip_prob < 0.5 &
+                                           gent_prob < 0.5 & ery_prob < 0.5,
+                                         "No susceptibility",
+                          ifelse(gent_prob >= ery_prob &
+                                  gent_prob >= cip_prob & 
+                                   gent_prob >= tet_prob,
+                                                "Gentamicin",
+                        ifelse(ery_prob >= tet_prob & 
+                              ery_prob >= gent_prob &
+                                ery_prob >= cip_prob,
+                                                  "Erythromycin",
+                      ifelse(tet_prob >= ery_prob & 
+                               tet_prob >= gent_prob &
+                                tet_prob >= cip_prob,
+                             "Tetracycline",
+                                    "Ciprofloxacin")))),
+
+             source_only_ans =           ifelse(tet_prob_source < 0.5 & cip_prob_source < 0.5 &
+                                           gent_prob_source < 0.5 & ery_prob < 0.5,
+                                         "No susceptibility",
+                          ifelse(gent_prob_source >= ery_prob_source &
+                                  gent_prob_source >= cip_prob_source & 
+                                   gent_prob_source >= tet_prob_source,
+                                                "Gentamicin",
+                        ifelse(ery_prob_source >= tet_prob_source & 
+                              ery_prob_source >= gent_prob_source &
+                                ery_prob_source >= cip_prob_source,
+                                                  "Erythromycin",
+                      ifelse(tet_prob_source >= ery_prob_source & 
+                               tet_prob_source >= gent_prob_source &
+                                tet_prob_source >= cip_prob_source,
+                             "Tetracycline",
+                                    "Ciprofloxacin")))))
+
+
+    
+    
+  }
+  
+  else {
+    return("Invalid Species")
+  }
+  
+  final_preds <- as.data.frame(cbind(case = 1:nrow(new_data_choose_gs), 
+                         genetic_source_pred = new_data_choose_gs$genetic_source_pred,
+                         source_only_ans = new_data_choose_gs$source_only_ans))
+    
+    return(final_preds)
+  
+}
+
+
+
+salm_final_preds <- recommend_source_genetic(salm_tet_test, "salmonella")
+ecoli_final_preds <- recommend_source_genetic(ecoli_tet_test, "ecoli")
+campy_final_preds <- recommend_source_genetic(campy_tet_test, "campy")
+
+# measure agreement
+salm_agree <- sum(salm_final_preds$genetic_source_pred ==
+                    salm_final_preds$source_only_ans)/nrow(salm_final_preds)
+
+ecoli_agree <- sum(ecoli_final_preds$genetic_source_pred ==
+                    ecoli_final_preds$source_only_ans)/nrow(ecoli_final_preds)
+
+campy_agree <- sum(campy_final_preds$genetic_source_pred ==
+                    campy_final_preds$source_only_ans)/nrow(campy_final_preds)
+
+
+```
+
+
+
+
+```{r}
+set.seed(1)
+
+example_recc <- rbind(salm_final_preds[sample(nrow(salm_final_preds), 3),],
+      ecoli_final_preds[sample(nrow(ecoli_final_preds), 3), ],
+      campy_final_preds[sample(nrow(campy_final_preds), 3), ])
+
+example_recc <- cbind(species = c(rep("Salmonella enterica", 3),
+                  rep("E.coli and Shigella", 3),
+                  rep("Campylobacter jejuni", 3)),
+      example_recc)
+
+```
+
+
+
+```{r tab4}
+
+
+kable(example_recc,
+      col.names =  c("species", "case number", "Genetic + Source Prediction",
+                     "Source Only Prediction"),
+      caption = "Three randomly selected predictions from each species") %>%
+  kable_styling()
+# code source only recommendation system 
+
+
+```
+
+
+
+# Discussion
+
+Our models found proved to perform significantly well on the NCBI data for Salmonella enterica, E.coli and Shigella, and Campylobacter isolates. 
+
+- talk about patterns extracted 
+- talk about utilities of source model 
+- collection date being important - patterns over time? 
+- to know about response to tetracycline: know about TET and APH genes 
+
+in predicting for susceptibility/resistance to tetracycline, the TET genes are most important to classification. The APH genes are most important to predicting response to streptomycin. The SUL2 genes are most important to predicting sulfisoxazole, and the BLA genes are most important to classifying response to ampicillin. 
+
+-  agreed on ~41% of cases. For E.coli isolates, the two models agreed ~94% of the time, a huge leap in improvement from the salmonella isolates. Finally, the models on the Campylobacter isolates agreed ~84% of the time.
+
+
+
+
+# Limitations
+
+- optimal cutoff not tested for
+- mentioned in intro: the way susceptible and resistant are defined 
+- lack of data: only retained isolates with antibiotic information, might be an inherent bias there
+- self reported antibiotic information 
+
+# Conclusions
+
+In the absence of traditional clinical-based procedures, we can turn to methods in machine learning to help prevent foodborne illnesses and outbreaks through the appropriate prescription of antibiotics to heterogeneous cases.
+
+
+# References {#references .unnumbered}
+
+
