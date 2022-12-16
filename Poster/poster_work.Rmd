@@ -33,6 +33,7 @@ salmonella <- read_csv("data/salmonella_df.csv")
 ## SALMONELLA
 ```{r}
 
+# clean salmonella data for poster use
 salmonella_use <- salmonella %>%
   select(-c(strain, isolate, location, serovar,
             serotype,
@@ -56,12 +57,12 @@ salm_fct <- c("isolation_type", "serovar_new",
               colnames(salmonella_use)[11:23])
 
 
-
+# make sure factors are factors
 salmonella_use[salm_fct] <- lapply(salmonella_use[salm_fct], factor)
 
 ```
 
-## missing data for salmonella
+## handling missing data for salmonella
 
 ```{r}
 
@@ -84,6 +85,8 @@ salmonella_use <- as.data.frame(salmonella_use) %>%
 #write_csv(salmonella_long, 
  #         "data/salmonella_long.csv")
 
+# create imputed datasets and write them to folders
+# read in data
 salmonella_long <- as.data.frame(read_csv("data/salmonella_long.csv"))
 ```
 
@@ -92,6 +95,7 @@ salmonella_long <- as.data.frame(read_csv("data/salmonella_long.csv"))
 
 ## SALMONELLA TETRACYCLINE ##
 
+# select antibiotics of interest
 salmonella_all_antibiotics <- c("tetracycline",
                                 "streptomycin",
                                 "sulfisoxazole",
@@ -129,6 +133,7 @@ salmonella_strep <- salmonella_long[,!colnames(salmonella_long) %in%
 
 ```{r}
 
+# clean ecoli and campylobacter data
 ecoli_campy_use <- ecoli_campy %>%
   select(-c(strain, isolate, location, serovar,
             serotype,
@@ -161,35 +166,42 @@ ifelse(grepl("nalidixic acid", resist_comb), 0, NA))) %>%
 
 
 
-# meropenem, tetracycline for ecoli
-# gentamicin, tetracycline for campy
 
+# get factor variables
 ecoli_campy_fct <- c("isolation_type", 
               "country", "isolation_source_new",
               "organism_group",
               colnames(ecoli_campy_use)[11:23])
 
 
-
+# make sure factor variables are factors and clean names
 ecoli_campy_use[ecoli_campy_fct] <- lapply(ecoli_campy_use[ecoli_campy_fct], factor)
 
 ecoli_campy_use <- as.data.frame(ecoli_campy_use) %>%
   clean_names()
+```
 
-# ecoli_campy_mice_out <- mice(ecoli_campy_use, 
+
+
+
+```{r}
+
+# ecoli multiple imputation 
+
+# ecoli_campy_mice_out <- mice(ecoli_campy_use,
        #                    5, pri=F)
 
-#ecoli_campy_imp<- vector("list",5)  
+#ecoli_campy_imp<- vector("list",5)
 
  #for (i in 1:5){
-  # ecoli_campy_imp[[i]] <- #mice::complete(ecoli_campy_mice_out,i) 
+  # ecoli_campy_imp[[i]] <- #mice::complete(ecoli_campy_mice_out,i)
  #}
-# 
-# 
+#
+#
 # ecoli_campy_long <- #mice::complete(ecoli_campy_mice_out,action="long") %>%
  #  select(-c(.imp, .id))
-# 
-# write_csv(ecoli_campy_long, 
+#
+# write_csv(ecoli_campy_long,
  #          "data/ecoli_campy_long.csv")
 
 ecoli_campy_long <- as.data.frame(read_csv("data/ecoli_campy_long.csv"))
@@ -200,7 +212,7 @@ ecoli_campy_long <- as.data.frame(read_csv("data/ecoli_campy_long.csv"))
 
 ```{r}
 
-
+# separate ecoli and campylobacter
 ecoli_long <- ecoli_campy_long %>%
   filter(organism_group == "E.coli and Shigella") %>%
   select(-organism_group)
@@ -230,9 +242,6 @@ ecoli_campy_all_antibiotics <- c("tetracycline",
 ## ECOLI Tetracycline ##
 
 
-# meropenem, tetracycline for ecoli
-# gentamicin, tetracycline for campy
-
 
 anti_tetra_ecolicamp <- ecoli_campy_all_antibiotics[!ecoli_campy_all_antibiotics %in% c("tetracycline")]
 
@@ -249,8 +258,6 @@ ecoli_tetra <- ecoli_long[,!colnames(ecoli_long) %in%
 ## ECOLI meropenem ##
 
 
-# meropenem, tetracycline for ecoli
-# gentamicin, tetracycline for campy
 
 
 anti_mero_ecolicamp <- ecoli_campy_all_antibiotics[!ecoli_campy_all_antibiotics %in% c("meropenem")]
@@ -272,9 +279,6 @@ ecoli_mero <- ecoli_long[,!colnames(ecoli_long) %in%
 ## CAMPY gentamicin ##
 
 
-# meropenem, tetracycline for ecoli
-# gentamicin, tetracycline for campy
-
 
 anti_gent_ecolicamp <- ecoli_campy_all_antibiotics[!ecoli_campy_all_antibiotics %in% c("gentamicin")]
 
@@ -293,9 +297,6 @@ campy_gent <- campy_long[,!colnames(campy_long) %in%
 ## CAMPY tetracycline ##
 
 
-# meropenem, tetracycline for ecoli
-# gentamicin, tetracycline for campy
-
 
 
 campy_tet <- campy_long[,!colnames(campy_long) %in%
@@ -309,6 +310,8 @@ campy_tet <- campy_long[,!colnames(campy_long) %in%
 
 
 ```{r}
+
+# make factor columns into factors: salmonella
 
 fact_cols_tet <- c("isolation_type", "serovar_new",
                "country", "isolation_source_new",
@@ -332,6 +335,8 @@ salmonella_strep[fact_cols_strep] <- lapply(salmonella_strep[fact_cols_strep], f
 
 ```{r}
 
+# factor columns into factors: ecoli
+
 fact_cols_tet_e <- c("isolation_type", 
                "country", "isolation_source_new",
                colnames(ecoli_tetra)[10:23])
@@ -353,7 +358,8 @@ ecoli_mero[fact_cols_mero] <- lapply(ecoli_mero[fact_cols_mero], factor)
 
 
 ```{r}
-# campy
+
+# factor variables into factors
 fact_cols_tet_c <- c("isolation_type", 
                "country", "isolation_source_new",
                colnames(campy_tet)[10:23])
@@ -374,6 +380,7 @@ campy_gent[fact_cols_gent] <- lapply(campy_gent[fact_cols_gent], factor)
 
 ```{r}
 
+# sample rows for training-test sets
 set.seed(1)
 salm_sample <- sample(c(TRUE, FALSE), nrow(salmonella_long), replace=TRUE, prob=c(0.8,0.2))
 
@@ -383,48 +390,8 @@ campy_sample <- sample(c(TRUE, FALSE), nrow(campy_long), replace=TRUE, prob=c(0.
 
 ```
 
-## data processing over
 
 
-
-
-```{r}  
-  
-  
-  
-control <- trainControl(method="repeatedcv", number=10, 
-search="grid")
-
-metric <- "Accuracy"
-
-```
-
-
-```{r}
-# takes forever
-# cut down on mtry values?
-# set.seed(1)
-# tunegrid <- expand.grid(.mtry=c(1:22))
-# 
-# grid_salm_tet <- train(tetracycline~., 
-# data=salmonella_tet[salm_sample,], method="rf", 
-# metric=metric, 
-# tuneGrid=tunegrid, 
-# trControl=control)
-# 
-# grid_salm_strep <- train(streptomycin~., 
-# data=salmonella_strep[salm_sample,], method="rf", 
-# metric=metric, 
-# tuneGrid=tunegrid, 
-# trControl=control)
-
-```
-
-
-```{r}
-# print(rf_gridsearch)
-# plot(rf_gridsearch)
-```
 
 
 
@@ -435,6 +402,7 @@ metric <- "Accuracy"
 
 ```{r, echo = TRUE}
 
+# run preliminary random forests for poster
 set.seed(1)
 rf_salm_tet <- randomForest(tetracycline ~., data = salmonella_tet[salm_sample, ],
                             importance = TRUE)
@@ -497,62 +465,10 @@ campy_imp_gent <- cbind(varImp(rf_campy_gent), var = rownames(varImp(rf_campy_ge
 ```
 
 
-```{r}
-# salm1
-# aph_6_id_complete : cadetblue2
-# serovar_new : red
-# suscept_sim : brown
-# tet_a_complete : coral
-# tet_b_complete : gold
-
-# salm2
-# aad_a1_complete : darkcyan
-# aph_3_ib_complete : beige
-# aph_6_id_complete : cadetblue2
-# serovar_new : red
-# sul1_complete : darkolivegreen1
-
-
-
-# ecoli1
-# aph_3_ib_complete : beige
-# aph_6_id_complete : cadetblue2
-# isolation_source_new : darksalmon
-# min_diff : darkblue
-# tet_a_complete : coral
-
-
-# ecoli2
-# collection_date : azure2
-# country : deeppink
-# isolation_source_new : darksalmon
-# min_diff : darkblue
-# suscept_sim : brown
-
-
-# campy 1
-# aph_3_ii_ia_complete : darkslateblue
-# collection_date : azure2
-# isolation_source_new : darksalmon
-# suscept_sim : brown
-# tet_o_complete : gray
-
-
-# campy 2
-# isolation_source_new : darksalmon
-# min_diff: darkblue
-# min_same : chartreuse
-# resist_sim : goldenrod2
-# suscept_sim : brown
-```
-
-
-
-
 
 ```{r}
 
-
+# clean variable importance tables
 salm_imp_tet <- salm_imp_tet %>%
   mutate(var = ifelse(var == "serovar_new",
             "serovar", var))
@@ -567,38 +483,6 @@ campy_imp_tet <- campy_imp_tet %>%
                       "isolation_source", var))
 
 
-# tet_b_complete : lightskyblue
-# tet_a_complete : lightseagreen
-# suscept_sim : lightpink1
-# collection_date : violet
-# serovar_new : orangered3
-
-
-# tet_a_complete : lightseagreen
-# sul_2_complete : goldenrod2
-# isolation_source : mintcream
-# min_diff : brown
-# aph_6_id_complete : lightgreen
-
-# tet_o_complete : darkblue
-# min_same : chartreuse
-# min_diff : brown
-# aph_3_ii_ia_complete : azure2
-# suscept_sim : darksalmon
-
-
-
-
-
-
-# aph_3_ib_complete :
-
-# min_diff : brown
-# tet_o_complete :
-# aph_3_ii_ia_complete :
-# collection_date : violet
-
-
 
 
 ```
@@ -606,6 +490,8 @@ campy_imp_tet <- campy_imp_tet %>%
 
 
 ```{r}
+
+# clean variable importance tables
 
 salm_imp_tet_nogene <- salm_imp_tet_nogene %>%
   mutate(var = ifelse(var == "serovar_new", "serovar",
@@ -625,35 +511,6 @@ campy_imp_tet_nogene <- campy_imp_tet_nogene %>%
 
 
 
-```{r}
-
-
-# collection_date : violet
-# serovar_new : orangered3
-# suscept_sim : lightpink1
-# tet_a_complete : lightseagreen
-# tet_b_complete : lightskyblue
-
-
-# aph_6_id_complete : lightgreen
-# isolation_source : mintcream
-# min_diff : brown
-# sul_2_complete : goldenrod2
-# tet_a_complete : lightseagreen
-
-
-# aph_3_ii_ia_complete : azure2
-# min_diff : brown
-# min_same : chartreuse
-# suscept_sim : darksalmon
-# tet_o_complete : darkblue
-
-
-
-
-
-
-```
 
 
 
@@ -680,22 +537,8 @@ salm1 <- ggplot(data = salm_imp_tet,
 
 
 
-# salm2 <- ggplot(data = salm_imp_strep,
-#        aes(x = fct_rev(fct_reorder(var, Overall)), y = Overall,
-#            fill = var)) + 
-#   geom_col( col = "white") +
-#   labs(x = "", y = "", fill = "") +
-#    theme_bw()+ theme(axis.text.x = element_text(angle = 90,
-#                                                vjust = 0.5,
-#                                                size = 7),
-#                      legend.position = "none"
-#                      ) +
-#   scale_fill_manual(values = c("darkcyan", "beige",
-#                                 "cadetblue2", "red", 
-#                                 "darkolivegreen1"))
 
 
-# 
 ecoli1 <- ggplot(data = ecoli_imp_tet,
        aes(x = fct_rev(fct_reorder(var, MeanDecreaseAccuracy)), y = MeanDecreaseAccuracy,
            fill = var)) +
@@ -710,19 +553,7 @@ ecoli1 <- ggplot(data = ecoli_imp_tet,
                                 "brown", "goldenrod2",
                                 "lightseagreen"))
 
-# ecoli2 <- ggplot(data = ecoli_imp_mero,
-#        aes(x = fct_rev(fct_reorder(var, Overall)), y = Overall,
-#            fill = var)) + 
-#   geom_col( col = "white") +
-#   labs(x = "", y = "", fill = "") +
-#   theme_bw()+ theme(axis.text.x = element_text(angle = 90,
-#                                                vjust = 0.5,
-#                                                size = 7),
-#                     legend.position = "none"
-#                     ) +
-#      scale_fill_manual(values = c("violet", "lightcoral",
-#                                 "mintcream", "brown", 
-#                                 "lightpink1")) 
+
 
 campy1 <- ggplot(data = campy_imp_tet,
        aes(x = fct_rev(fct_reorder(var, MeanDecreaseAccuracy)), y = MeanDecreaseAccuracy,
@@ -741,33 +572,9 @@ campy1 <- ggplot(data = campy_imp_tet,
 
 
 
-# campy2 <- ggplot(data = campy_imp_gent,
-#        aes(x = fct_rev(fct_reorder(var, Overall)), y = Overall,
-#            fill = var)) + 
-#   geom_col( col = "white") +
-#   labs(x = "", y = "", fill = "") +
-#   theme_bw()+ theme(axis.text.x = element_text(angle = 90,
-#                                                vjust = 0.5,
-#                                                size = 7),
-#                    legend.position = "none"
-#                     ) +
-#    scale_fill_manual(values = c( "mintcream", "brown",
-#                                 "honeydew1", "hotpink1", 
-#                                 "lightpink1"))
-# 
-
 ```
 
 
-
-```{r}
-
-
-
-
-
-
-```
 
 
 ```{r}
@@ -786,6 +593,7 @@ ggpubr::ggarrange(salm1, salm2,
 
 ```{r}
 
+# predict on test sets
 salm_tet_pred <- predict(rf_salm_tet, 
                          salmonella_tet[-salm_sample,])
 
@@ -807,10 +615,10 @@ campy_gent_pred <- predict(rf_campy_gent,
 ```
 
 
-# imputed outcomes
-# also imputed test data by mistake
+
 ```{r}
-distinct(campy_tet[-salm_sample,])
+
+# collect performance metrics on test set
 
 salm_tet_conf <- confusionMatrix(salm_tet_pred, 
                 salmonella_tet[-salm_sample,]$tetracycline,
@@ -849,6 +657,7 @@ campy_gent_conf <- confusionMatrix(campy_gent_pred,
 
 ```{r, echo = TRUE}
 
+# run source only random forest models
 set.seed(1)
 rf_salm_tet_nogene <- randomForest(tetracycline ~collection_date +
               isolation_type +
@@ -930,6 +739,7 @@ campy_imp_gent_nogene <- cbind(as.data.frame(importance(rf_campy_gent_nogene)), 
 
 ```{r}
 
+# apply models to test sets
 salm_tet_pred_nogene <- predict(rf_salm_tet_nogene, 
                          salmonella_tet[-salm_sample,])
 
@@ -950,11 +760,11 @@ campy_gent_pred_nogene <- predict(rf_campy_gent_nogene,
 
 ```
 
-# imputed outcomes
-# also imputed test data by mistake
+
+
 ```{r}
 
-
+# get performance metrics
 salm_tet_conf_nogene <- confusionMatrix(salm_tet_pred_nogene, 
                 salmonella_tet[-salm_sample,]$tetracycline,
                 positive = '1')
@@ -990,7 +800,6 @@ campy_gent_conf_nogene <- confusionMatrix(campy_gent_pred_nogene,
 r <- prediction(predictions = rand_forest_test$votes[, "1"] , 
             labels = imp_data$tetracycline)
 
-salm_tet_pred
 
 auc_ROCR <- performance(roc_pred, measure = "auc")
 
@@ -1010,22 +819,11 @@ auc(campy_gent[-campy_sample, ]$gentamicin,
 
 
 
-```{r}
-
-
-
-
-# serovar_new : red
-# isolation_source_new : darksalmon
-# collection_date: azure2
-# country : deeppink
-# isolation_type : cornsilk3
-
-
-```
 
 
 ```{r}
+
+# clean variable importance datasets
 
 salm_imp_tet_nogene <- salm_imp_tet_nogene %>%
   mutate(var = ifelse(var == "serovar_new", "serovar",
@@ -1047,53 +845,6 @@ campy_imp_tet_nogene <- campy_imp_tet_nogene %>%
 
 
 
-```{r}
-
-
-# collection_date : violet
-# serovar_new : orangered3
-# suscept_sim : lightpink1
-# tet_a_complete : lightseagreen
-# tet_b_complete : lightskyblue
-
-
-# aph_6_id_complete : lightgreen
-# isolation_source : mintcream
-# min_diff : brown
-# sul_2_complete : goldenrod2
-# tet_a_complete : lightseagreen
-
-
-# aph_3_ii_ia_complete : azure2
-# min_diff : brown
-# min_same : chartreuse
-# suscept_sim : darksalmon
-# tet_o_complete : darkblue
-
-
-### NO GENE ###
-
-# collection_date : violet
-# country : slateblue1
-# isolation_source : mintcream
-# isolation_type : peachpuff
-# serovar : orangered3
-
-
-# collection_date : violet
-# country : slateblue1
-# isolation_source : mintcream
-# isolation_type : peachpuff
-
-
-# collection_date : violet
-# country : slateblue1
-# isolation_source : mintcream
-# isolation_type : peachpuff
-
-
-
-```
 
 
 
@@ -1176,6 +927,7 @@ campy2_nogene <- ggplot(data = campy_imp_gent_nogene,
 
 
 ```{r}
+
 ggpubr::ggarrange(salm1, salm1_nogene,
          ecoli1, ecoli1_nogene,
          campy1, campy1_nogene,
@@ -1186,18 +938,3 @@ ggpubr::ggarrange(salm1, salm1_nogene,
 ```
 
 
-
-```{r}
-
-
-boruta_salm <- Boruta(tetracycline ~ ., data = salmonella_tet, doTrace = 2)
-boruta_ecoli <- Boruta(tetracycline ~ ., data = ecoli_tetra, doTrace = 2)
-boruta_campy <- Boruta(tetracycline ~ ., data = campy_tet, doTrace = 2)
-boruta_campy$finalDecision
-boruta_gent <- Boruta(gentamicin ~ ., )
-
-table(campy_gent$gentamicin)
-# bla_ec_complete - acr_f_complete - mdt_m_complete - sul2_complete - tet_a_complete - aph_3_ib_complete - aph_6_id_complete          
-
-table(ecoli_mero$meropenem)
-```
