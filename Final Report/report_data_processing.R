@@ -12,9 +12,8 @@ salmonella_long <- read_csv("report_data/salmonella_long.csv")
 
 
 
-
 ## SALMONELLA TETRACYCLINE ##
-
+# antibiotics of interest
 salmonella_all_antibiotics <- c("tetracycline",
                                 "streptomycin",
                                 "sulfisoxazole",
@@ -22,33 +21,39 @@ salmonella_all_antibiotics <- c("tetracycline",
 
 anti_tetra <- salmonella_all_antibiotics[!salmonella_all_antibiotics %in% c("tetracycline")]
 
+# create dataset for salmonella tetracycline
 salmonella_tet <- salmonella_long[,!colnames(salmonella_long) %in%
                                     anti_tetra]
 
 
+
 ## SALMONELLA STREPTOMYCIN ##
 
-
+# select streptomycin
 anti_strep <- salmonella_all_antibiotics[!salmonella_all_antibiotics %in% c("streptomycin")]
 
+# create dataset for salmonella streptomycin
 salmonella_strep <- salmonella_long[,!colnames(salmonella_long) %in%
                                       anti_strep]
 
 
 ## SALMONELLA SULFISOXAZOLE ##
 
-
+# select sulfisoxazole
 anti_sulf <- salmonella_all_antibiotics[!salmonella_all_antibiotics %in% c("sulfisoxazole")]
 
+# create dataset for salmonella sulfisoxazole
 salmonella_sulf <- salmonella_long[,!colnames(salmonella_long) %in%
                                      anti_sulf]
 
 
+
 ## SALMONELLA AMPICILLIN ##
 
-
+# select ampicillin
 anti_amp <- salmonella_all_antibiotics[!salmonella_all_antibiotics %in% c("ampicillin")]
 
+# create dataset for salmonella ampicillin
 salmonella_amp <- salmonella_long[,!colnames(salmonella_long) %in%
                                     anti_amp]
 
@@ -61,6 +66,7 @@ salmonella_amp <- salmonella_long[,!colnames(salmonella_long) %in%
 
 
 
+# separate ecoli and campy joint dataset
 
 ecoli_long <- ecoli_campy_long %>%
   filter(organism_group == "E.coli and Shigella") %>%
@@ -75,7 +81,7 @@ campy_long <- ecoli_campy_long %>%
 
 
 
-
+# ecoli and campylobacter antibiotics of interest
 ecoli_campy_all_antibiotics <- c("tetracycline",
                                  "meropenem",
                                  "ciprofloxacin",
@@ -95,9 +101,10 @@ ecoli_campy_all_antibiotics <- c("tetracycline",
 
 ## ECOLI Tetracycline ##
 
-
+# select tetracycline
 anti_tetra_ecolicamp <- ecoli_campy_all_antibiotics[!ecoli_campy_all_antibiotics %in% c("tetracycline")]
 
+# make dataset for ecoli tetracycline
 ecoli_tetra <- ecoli_long[,!colnames(ecoli_long) %in%
                             anti_tetra_ecolicamp]
 
@@ -106,9 +113,10 @@ ecoli_tetra <- ecoli_long[,!colnames(ecoli_long) %in%
 
 ## ECOLI MEROPENEM ##
 
-
+# select meropenem
 anti_mero_ecolicamp <- ecoli_campy_all_antibiotics[!ecoli_campy_all_antibiotics %in% c("meropenem")]
 
+# make dataset for ecoli meropenem
 ecoli_mero <- ecoli_long[,!colnames(ecoli_long) %in%
                            anti_mero_ecolicamp]
 
@@ -116,9 +124,10 @@ ecoli_mero <- ecoli_long[,!colnames(ecoli_long) %in%
 
 ## ECOLI CIPROFLOXACIN ##
 
-
+# select ciprofloxacin
 anti_cip_ecolicamp <- ecoli_campy_all_antibiotics[!ecoli_campy_all_antibiotics %in% c("ciprofloxacin")]
 
+# create dataset for ecoli ciprofloxacin
 ecoli_cip <- ecoli_long[,!colnames(ecoli_long) %in%
                           anti_cip_ecolicamp]
 
@@ -126,9 +135,10 @@ ecoli_cip <- ecoli_long[,!colnames(ecoli_long) %in%
 
 ## ECOLI AMPICILLIN ##
 
-
+# select ampicillin
 anti_amp_ecolicamp <- ecoli_campy_all_antibiotics[!ecoli_campy_all_antibiotics %in% c("ampicillin")]
 
+# create dataset for ecoli ampicillin
 ecoli_amp <- ecoli_long[,!colnames(ecoli_long) %in%
                           anti_amp_ecolicamp]
 
@@ -144,18 +154,20 @@ ecoli_amp <- ecoli_long[,!colnames(ecoli_long) %in%
 
 ## CAMPY GENTAMICIN ##
 
-
+# select gentamicin
 anti_gent_ecolicamp <- ecoli_campy_all_antibiotics[!ecoli_campy_all_antibiotics %in% c("gentamicin")]
 
+# create dataset for campylobacter gentamicin
 campy_gent <- campy_long[,!colnames(campy_long) %in%
                            anti_gent_ecolicamp]
 
 
-## CAMPY ERYTHROMICIN ##
+## CAMPY ERYTHROMYCIN ##
 
-
+# select erythromycin
 anti_ery_ecolicamp <- ecoli_campy_all_antibiotics[!ecoli_campy_all_antibiotics %in% c("erythromycin")]
 
+# create dataset for campylobacter erythromycin
 campy_ery <- campy_long[,!colnames(campy_long) %in%
                           anti_ery_ecolicamp]
 
@@ -163,9 +175,10 @@ campy_ery <- campy_long[,!colnames(campy_long) %in%
 
 ## CAMPY TETRACYCLINE ##
 
-
+# select tetracycline
 anti_tetra_ecolicamp <- ecoli_campy_all_antibiotics[!ecoli_campy_all_antibiotics %in% c("tetracycline")]
 
+# create dataset for campylobacter tetracycline
 campy_tetra <- campy_long[,!colnames(campy_long) %in%
                             anti_tetra_ecolicamp]
 
@@ -174,9 +187,10 @@ campy_tetra <- campy_long[,!colnames(campy_long) %in%
 
 ## CAMPY CIPROFLOXACIN ##
 
-
+# select ciprofloxacin
 anti_cip_ecolicamp <- ecoli_campy_all_antibiotics[!ecoli_campy_all_antibiotics %in% c("ciprofloxacin")]
 
+# create dataset for campylobacter ciprofloxacin
 campy_cip <- campy_long[,!colnames(campy_long) %in%
                           anti_cip_ecolicamp]
 
@@ -186,7 +200,7 @@ campy_cip <- campy_long[,!colnames(campy_long) %in%
 
 
 
-
+## SET FACTOR COLUMNS AS FACTORS ##
 
 # salmonella tetracycline
 fact_cols_tet <- c("isolation_type", "serovar_new",
@@ -317,7 +331,7 @@ campy_cip[fact_cols_cip_c] <- lapply(campy_cip[fact_cols_cip_c], factor)
 
 
 
-
+# randomly sample from the data to make training-testing splits
 set.seed(1)
 salm_sample <- sample(c(TRUE, FALSE), nrow(salmonella_long), replace=TRUE, prob=c(0.8,0.2))
 

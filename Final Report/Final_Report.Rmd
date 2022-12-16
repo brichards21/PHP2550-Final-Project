@@ -18,7 +18,7 @@ editor_options:
 knitr::opts_chunk$set(message=FALSE, warning=FALSE, error=FALSE, echo = FALSE
                       #, fig.width = 6, fig.height = 3
                       )
-
+# read in the libraries
 library(caret)
 library(tidyverse)
 library(knitr)
@@ -196,7 +196,7 @@ our study (**Table 1**).
 : Variables in Consideration for Random Forest Modeling
 
 \underline{Reformatting the Most Common Antimicrobial Resistant Genes}
-We also reformatted the prevalence of the antimicrobial-resistant genes
+We reformatted the prevalence of the antimicrobial-resistant genes
 found in each of our isolates. There are 499 unique resistant genes
 found in the isolates within our data. In order to include some level of
 gene resistant presence as predictors in our model, we chose to include
@@ -218,8 +218,7 @@ prevalence in either the E.coli isolates or the Campylobacter isolates.
 
 
 Initially, we had decided to evaluate isolates from these three bacteria
-within joint modelling and analysis procedures. However, through our
-data exploration process, we found that Salmonella isolates had retained
+within joint modelling and analysis procedures. However, we found that Salmonella isolates had retained
 two additional pieces of information compared to the E.coli and
 Campylobacter isolates. This information are antigen formula, which
 gives the detected presence of a specific viral antigen indicating viral
@@ -228,7 +227,7 @@ within a certain bacteria. Additionally, while isolate data for
 Salmonella were retained from 2002-2021, E.coli and Campylobacter
 records did not begin presenting themselves in our data until much later
 (2009 for E.coli and Shigella, and 2016 for Campylobacter). For these
-reasons, we split our dataset into three groups one for each of the three species/organism groups. Notably, this separation was also convenient for the balancing
+reasons, we split our dataset into three groups, one for each of the three species/organism groups. Notably, this separation was also convenient for the balancing
 of the different sample sizes within our datasets. Overall, we retained
 8,672 observations on Salmonella, 3,880 on E.coli, and 3,497 on
 Campylobacter. By separating the data by species, we avoided a joint final
@@ -250,7 +249,7 @@ that we used to develop our models, we coded '1' as drug
 susceptibility, '0' as drug resistance, and NA if the data did not retain any
 information about that particular drug on a given isolate. The subset of
 most common antibiotics that we considered in our models fulfilled
-the following criteria: be within the top two most common drugs that
+the following criteria: be within the top two (or top four in the result of ties) most common drugs that
 isolates of a given bacteria have shown susceptibility or resistance to.
 \textbf{Table 3} shows the most common antibiotics that isolates within
 each bacteria showed resistance and susceptibility to. Overall, each species' isolates were assessed to four different antibiotics. 
@@ -282,7 +281,7 @@ Salmonella, 19,400 for E.coli, and 17,485 for Campylobacter.
 \begin{table}[hbtp]
 \centering
 \caption{Antibiotics Considered in Modeling}  
-\includegraphics[width=14cm, height=14cm, keepaspectratio]{report_figures/antibiotic_table.png}
+\includegraphics[width=12cm, height=12cm, keepaspectratio]{report_figures/drug_tbl.png}
 \end{table}
 ```
 
@@ -357,17 +356,7 @@ indicating more importance.
 
 We assessed the performance of the models using accuracy, sensitivity,
 specificity, and area under the ROC curve (AUC). Moreover, gini
-importance captured strong predictors of drug response. The accuracy of
-a test to correctly distinguish gene-resistant or susceptibility as
-predictors in our model cases is referred to as its accuracy. To measure
-a test's accuracy, we must compute the fraction of true positives (TP) and
-true negatives (TN) in all analyzed cases. This can be expressed
-mathematically as (TP + TN)/(TP+TN+FP+FN) where FP and FN are false-positives and false-negatives, respectively. A test's specificity is
-determined by its ability to appropriately identify antibiotic-resistant
-cases. A test's sensitivity is its capacity to appropriately
-identify antibiotic-susceptibility cases. We also use the area under the ROC curve
-(AUC) as a measure of classifier performance [@bradley1997use]. The
-larger the AUC, the better the performance of the model.
+importance captured strong predictors of drug response. We also use the area under the ROC curve (AUC) as a measure of classifier performance [@bradley1997use]. The larger the AUC, the better the performance of the model.
 
 ## 2.5 Logistic Regression
 
@@ -375,11 +364,7 @@ One drawback of the random forest algorithm is that it does not make it
 accessible to extract quantifiable relationships between predictors and
 outcomes in terms of how magnitudes of changes in predictors affect the
 odds of observing the outcome. In order to remedy this, we used
-multivariable logistic regression to extract patterns between drug susceptibility
-and resistance for the most common drug in the data (tetracycline) and
-some of the most prominent variables to the prediction process, as
-observed in observations of variable importance. Logistic regression was
-conducted using the `glm` function from the `stats` package in R [@statspck].
+multivariable logistic regression to extract patterns between drug susceptibility and resistance for the most common drug in the data (tetracycline) and some of the most prominent variables to the prediction process, as observed in observations of variable importance. Logistic regression was conducted using the `glm` function from the `stats` package in R [@statspck].
 
 # 3. Results
 
@@ -392,14 +377,8 @@ most commonly reported antibiotics in our data (\textbf{Table 3}).
 Data for each species were split 80-20 into training sets used to build
 that species' associated models, and testing sets in order to assess
 the performance of those models on data not directly used in the
-training process.
-
-As aforementioned, in order to reduce the dimensionality of our data, we
-utilized the Boruta algorithm on our training data before proceeding
-with applications to random forests. Variable selection was only
-performed for the models containing both source and genetic predictors.
-
-In order to optimize the performance of our models, we used 10-fold
+training process. As aforementioned, in order to reduce the dimensionality of our data, we utilized the Boruta algorithm on our training data before proceeding with applications to random forests. Variable selection was only
+performed for the models containing both source and genetic predictors. In order to optimize the performance of our models, we used 10-fold
 cross validation (CV), a process in which our training data was split
 into 10 subsets with the models being iteratively fit 10 times, each time on
 9 (k-1) of the folds with performance being evaluated on the $k^{th}$
@@ -414,17 +393,14 @@ measure the prediction error on data not utilized in a given bootstrap
 sample, were the values used in the final random forest models.
 
 Set $m$ = number of predictors in the data. We tested three common
-values for mtry: $\sqrt{m}, \: m/3$, and $m/2$ (all rounded down to the nearest integer) [@randfor].
-For number of trees, we tested values 250, 500, and 1,000. In these
-processes, we want enough trees to stabilize the error but not so many
-that the ensemble becomes correlated and causes the model to be overfit.
+values for mtry: $\sqrt{m}, \: m/3$, and $m/2$ (all rounded down to the nearest integer) [@randfor]. For number of trees, we tested values 250, 500, and 1,000. In these processes, we want enough trees to stabilize the error but not so many that the ensemble becomes correlated and causes the model to be overfit.
 
 To account for any potential class imbalances within each model, we
 weighted classes by $\frac{1}{prop\:of\:samples\:in\:class}$.
 
 ```{r}
 
-# training sets
+# read in the training set data from the report data folder
 salm_tet_train <- as.data.frame(read_csv("report_data/salm_tet_train.csv")) %>%
   mutate(tetracycline = as.factor(tetracycline))
 
@@ -462,7 +438,7 @@ campy_cip_train <- as.data.frame(read_csv("report_data/campy_cip_train.csv")) %>
   mutate(ciprofloxacin = as.factor(ciprofloxacin))
 
 
-# testing sets
+# read in the testing set data from the report_data folder
 salm_tet_test <- as.data.frame(read_csv("report_data/salm_tet_test.csv")) %>%
   mutate(tetracycline = as.factor(tetracycline))
 
@@ -537,8 +513,7 @@ type, serovar, country, and isolation source. We decided to include
 serovar information in the 'source only' predictors because in our data,
 serovar information is often reduced to the geographical origin of
 illness, which may be known. Serovar information that is not tied to a
-geographical origin on the other hand, may be discovered through a relatively simple
-visit to the doctor's office.
+geographical origin on the other hand, may be discovered through visits to the doctor's office.
 
 \underline{Salmonella enterica} None of the variables within the
 salmonella dataset were deemed unimportant enough to exclude in any of
@@ -546,37 +521,27 @@ the four random forest models considering both source and genetic
 predictors, i.e. all predictors (models with outcome Tetracycline, outcome
 streptomycin, outcome Ampicillin, and outcome Sulfisoxazole). And so, during hyper-parameter tuning for Salmonella, we considered all predictors in the data.
 
-\underline{E.coli and Shigella} In predicting E.coli responses to Meropenem, the
-presence/absence of 7 antimicrobial resistant genes were deemed either
+\underline{E.coli and Shigella} In predicting E.coli responses to Meropenem, the presence/absence of 7 antimicrobial resistant genes were deemed either
 unimportant (6) or tentatively unimportant (1) so we decided to remove
-all 7 of those genes from being predictors in that model
-(bla_oxa_193_complete, x50s_122_a103v_point, gyr_a\_t86i_point,
-bla_oxa_complete, tet_o\_complete, aph_3\_ii_ia_complete, and
-bla_ec_complete).
+all 7 of those genes from being predictors in that model.
 
 In predicting antibiotic response to tetracycline in E.coli isolates,
 the presence/absence of 5 antimicrobial resistant genes were considered
 to be unimportant and were thus excluded in hyper-parameter tuning and
-final model runs: aph_3\_ii_ia_complete,
-bla_oxa_193_complete, gyr_a\_t86i_point, tet_o\_complete,
-x50s_122_a103v_point.
-
-In predicting antibiotic response to Ampicillin and Ciprofloxacin, the
+final model runs. In predicting antibiotic response to Ampicillin and Ciprofloxacin, the
 same 5 attributes were confirmed unimportant.
 
 
 \underline{Campylobacter jejuni} In predicting antibiotic response to
 tetracycline within Campylobacter isolates, seven antimicrobial
-resistant genes were deemed unimportant: acr_f\_complete,
-aph_3\_ib_complete, aph_6\_id_complete, bla_ec_complete,
-mdt_m\_complete, tet_a\_complete, and sulf2_complete.
+resistant genes were deemed unimportant. The same seven genes were deemed unimportant in predicting Gentamicin, Erythromycin, and Ciprofloxacin.
 
-The same seven genes were deemed unimportant in predicting Gentamicin,
-Erythromycin, and Ciprofloxacin.
+See `report_data_processing.R` in the 'Final Report' folder in the GitHub repository for more details on the variable selection process.
 
 ```{r}
 
-
+# create class weights for salmonella and create data only containing
+# source information 
 class_prop_salm_tet <- as.vector(prop.table(table(salm_tet_train$tetracycline)))
 salm_tet_train_source <- salm_tet_train[, -c(3:4, 8:22)]
 
@@ -705,9 +670,10 @@ rf_model_salm_amp_s <- ranger(
 ```
 
 ```{r}
-# SALMONELLA performance metrics
 
-# tetra
+# collect SALMONELLA performance metrics 
+
+# tetracycline
 salm_tet_pred <- ifelse(predict(rf_model_salm_tet, 
                          salm_tet_test)$predictions[, '1'] > 0.5, 1, 0)
 
@@ -718,7 +684,7 @@ salm_tet_conf <- confusionMatrix(as.factor(salm_tet_pred),
 salm_tet_auc <- auc(salm_tet_test$tetracycline,
     as.numeric(salm_tet_pred))
 
-# tetra source
+# tetracycline source
 
 salm_tet_pred_s <- ifelse(predict(rf_model_salm_tet_s, 
                          salm_tet_test)$predictions[, '1'] > 0.5, 1, 0)
@@ -731,7 +697,7 @@ salm_tet_auc_s <- auc(salm_tet_test$tetracycline,
     as.numeric(salm_tet_pred_s))
 
 
-# strep
+# streptomycin
 salm_strep_pred <- ifelse(predict(rf_model_salm_strep, 
                          salm_strep_test)$predictions[, '1'] > 0.5, 1, 0)
 
@@ -743,7 +709,7 @@ salm_strep_auc <- auc(salm_strep_test$streptomycin,
     as.numeric(salm_strep_pred))
 
 
-# strep source
+# streptomycin source
 salm_strep_pred_s <- ifelse(predict(rf_model_salm_strep_s, 
                          salm_strep_test)$predictions[, '1'] > 0.5, 1, 0)
 
@@ -755,7 +721,7 @@ salm_strep_auc_s <- auc(salm_strep_test$streptomycin,
     as.numeric(salm_strep_pred_s))
 
 
-# sulf
+# sulfisoxazole
 salm_sulf_pred <- ifelse(predict(rf_model_salm_sulf, 
                          salm_sulf_test)$predictions[, '1'] > 0.5, 1, 0)
 
@@ -767,7 +733,7 @@ salm_sulf_auc <- auc(salm_sulf_test$sulfisoxazole,
     as.numeric(salm_sulf_pred))
 
 
-# sulf source
+# sulfisoxazole source
 salm_sulf_pred_s <- ifelse(predict(rf_model_salm_sulf_s, 
                          salm_sulf_test)$predictions[, '1'] > 0.5, 1, 0)
 
@@ -779,7 +745,7 @@ salm_sulf_auc_s <- auc(salm_sulf_test$sulfisoxazole,
     as.numeric(salm_sulf_pred_s))
 
 
-# amp
+# ampicillin
 salm_amp_pred <- ifelse(predict(rf_model_salm_amp, 
                          salm_amp_test)$predictions[, '1'] > 0.5, 1, 0)
 
@@ -791,7 +757,7 @@ salm_amp_auc <- auc(salm_amp_test$ampicillin,
     as.numeric(salm_amp_pred))
 
 
-# amp source
+# ampicillin source
 salm_amp_pred_s <- ifelse(predict(rf_model_salm_amp_s, 
                          salm_amp_test)$predictions[, '1'] > 0.5, 1, 0)
 
@@ -805,6 +771,9 @@ salm_amp_auc_s <- auc(salm_amp_test$ampicillin,
 ```
 
 ```{r}
+
+# create class weights for e.coli models and create source only 
+# datasets
 
 class_prop_ecoli_tet <- as.vector(prop.table(table(ecoli_tet_train$tetracycline)))
 ecoli_tet_train_source <- ecoli_tet_train[, -c(3:4, 7:17)]
@@ -839,6 +808,7 @@ rf_model_ecoli_tet <- ranger(
 )
 
 
+# tetracycline source
 rf_model_ecoli_tet_s <- ranger(
   formula = tetracycline ~ .,
   data = ecoli_tet_train_source,
@@ -865,6 +835,7 @@ rf_model_ecoli_mero <- ranger(
 )
 
 
+# Meropenem source
 rf_model_ecoli_mero_s <- ranger(
   formula = meropenem ~ .,
   data = ecoli_mero_train_source,
@@ -890,6 +861,7 @@ rf_model_ecoli_cip <- ranger(
 )
 
 
+# Ciprofloxacin source
 rf_model_ecoli_cip_s <- ranger(
   formula = ciprofloxacin ~ .,
   data = ecoli_cip_train_source,
@@ -915,7 +887,7 @@ rf_model_ecoli_amp <- ranger(
   probability = T
 )
 
-
+# Ampicillin source
 rf_model_ecoli_amp_s <- ranger(
   formula = ampicillin ~ .,
   data = ecoli_amp_train_source,
@@ -1036,6 +1008,7 @@ ecoli_amp_auc_s <- auc(ecoli_amp_test$ampicillin,
 
 ```{r}
 
+# create class weights for tetracycline
 class_prop_campy_tet <- as.vector(prop.table(table(campy_tet_train$tetracycline)))
 campy_tet_train_source <- campy_tet_train[, -c(3:4, 7:15)]
 
@@ -1069,7 +1042,7 @@ rf_model_campy_tet <- ranger(
   probability = T
 )
 
-
+# tetracycline source
 rf_model_campy_tet_s <- ranger(
   formula = tetracycline ~ .,
   data = campy_tet_train_source,
@@ -1083,7 +1056,7 @@ rf_model_campy_tet_s <- ranger(
 
 
 
-# gent
+# gentamicin
 rf_model_campy_gent <- ranger(
   formula = gentamicin ~ .,
   data = campy_gent_train,
@@ -1095,7 +1068,7 @@ rf_model_campy_gent <- ranger(
   probability = T
 )
 
-
+# gentamicin source
 rf_model_campy_gent_s <- ranger(
   formula = gentamicin ~ .,
   data = campy_gent_train_source,
@@ -1120,7 +1093,7 @@ rf_model_campy_cip <- ranger(
   probability = T
 )
 
-
+# ciprofloxacin source
 rf_model_campy_cip_s <- ranger(
   formula = ciprofloxacin ~ .,
   data = campy_cip_train_source,
@@ -1146,7 +1119,7 @@ rf_model_campy_ery <- ranger(
   probability = T
 )
 
-
+# Erythromycin source
 rf_model_campy_ery_s <- ranger(
   formula = erythromycin ~ .,
   data = campy_ery_train_source,
@@ -1268,7 +1241,7 @@ campy_ery_auc_s <- auc(campy_ery_test$erythromycin,
 
 ## 3.2 Test Set Performance
 
-After hyper-parameter tuning (see `hyperparameter_tuning.R` in the 'Final Report' folder in the GitHub repository for more details), we assessed the performance of our models on testing sets for each species of interest (\textbf{Table 2}).
+After hyper-parameter tuning (see `hyperparameter_tuning.R` in the 'Final Report' folder in the GitHub repository for more details), we assessed the performance of our models on testing sets for each species of interest (\textbf{Table 4}).
 
 ```{=tex}
 \begin{table}[hbtp]
@@ -1282,10 +1255,7 @@ After hyper-parameter tuning (see `hyperparameter_tuning.R` in the 'Final Report
 Overall, all of our models containing both source and genetic predictors
 performed exceptionally well on our test data. Most models including
 genetic predictors obtained accuracy, sensitivity, specificity, and area
-under the ROC curve values over 0.90, which shows great performance and
-utility. As the goal of the project was to create a recommendation
-system to apply to new cases of these species, we may want to prioritize
-sensitivity over accuracy or specificity since we want to reliably
+under the ROC curve values over 0.90. As the goal of the project was to create a recommendation system to apply to new cases of these species, we may want to prioritize sensitivity over accuracy or specificity since we want to reliably
 recommend an antibiotic that that new case would be susceptible to
 (susceptibility being defined as the positive '1' class in our models).
 Thus, using average sensitivity as a benchmark, our models for
@@ -1311,8 +1281,7 @@ through the potentially tedious process of clinical testing to find
 genetic specific information. The question of interest then becomes: how
 accurate and useful can these models still be in the absence of less
 attainable genetic information? If we were to build a recommendation
-system for more public but safe and doctor-approved use, can our models still be reliable to
-the average person?
+system for more public but safe and doctor-approved use, can our models still be reliable to the average person?
 
 The results of our 'source only' models are bold in \textbf{Table 4}.
 Notably, removing the genetically associated predictors from our models
@@ -1328,8 +1297,9 @@ variables most integral to predicting response in these antibiotics.
 
 ```{r}
 
-# extract top 5 most important covariates
+# extract top 5 most important covariates for source + genetic models
 
+# salmonella
 salm_imp_tet <- as.data.frame(cbind(gini_importance = rf_model_salm_tet$variable.importance, var = names(importance(rf_model_salm_tet)))) %>%
   mutate(gini_importance = as.numeric(gini_importance)) %>%
   arrange(desc(gini_importance)) %>%
@@ -1400,8 +1370,9 @@ campy_imp_ery <- as.data.frame(cbind(gini_importance = rf_model_campy_ery$variab
 
 ```{r}
 
-# extract top 5 most important covariates
+# extract top 5 most important covariates for source only models
 
+# salmonella
 salm_imp_tet_nogene <- as.data.frame(cbind(gini_importance = rf_model_salm_tet_s$variable.importance, var = names(importance(rf_model_salm_tet_s)))) %>%
   mutate(gini_importance = as.numeric(gini_importance)) %>%
   arrange(desc(gini_importance)) %>%
@@ -1476,6 +1447,8 @@ campy_imp_ery_nogene <- as.data.frame(cbind(gini_importance = rf_model_campy_ery
 
 ```{r}
 
+# clean the names of top 5 importance datasets
+
 salm_imp_amp <- salm_imp_amp %>%
   mutate(var = ifelse(var == "antigen_formula_new",
             "antigen_formula", var))
@@ -1507,7 +1480,7 @@ campy_imp_gent <- campy_imp_gent %>%
                       "isolation_source", var))
 
 
-# no gene importance
+# clean the names of the top 5 source only importance datasets
 
 salm_imp_tet_nogene <- salm_imp_tet_nogene %>%
   mutate(var = ifelse(var == "isolation_source_new",
@@ -1652,12 +1625,17 @@ all three species.
 
 ```{r}
 
+# run logistic regression to extract quantitative relationships 
+
+# salmonella
 log_salm <- glm(tetracycline ~ collection_date + serovar_new + isolation_source_new,  
     data = salm_tet_train_source, family = "binomial")
 
+# ecoli
 log_ecoli <- glm(tetracycline ~ collection_date + isolation_source_new,  
     data = ecoli_tet_train_source, family = "binomial")
 
+# campylobacter
 log_campy <- glm(tetracycline ~ collection_date + isolation_source_new,  
     data = campy_tet_train_source, family = "binomial")
 
@@ -1672,7 +1650,7 @@ log_campy <- glm(tetracycline ~ collection_date + isolation_source_new,
 ```
 
 
-\textbf{Table 3} displays the multiplicative odds constant associated
+\textbf{Table 5} displays the multiplicative odds constant associated
 with each variable of interest. Note that while isolation source and
 serovar are categorical variables and thus are indicators in nature,
 collection date is a continuous variable and so the odds constant
@@ -1681,17 +1659,9 @@ having a susceptible response is multiplied by. Values above 1 increase
 the odds while values less than 1 decrease the odds.
 
 Most notably, serovar Enteritidis, and a stool isolation source have the
-largest \textit{significant} magnitude of effect on the odds (farthest away from 1). While
-serovar Enteritidis drastically increases the odds of Salmonella
-isolates being susceptible to tetracycline, a stool isolation source
-decreases the odds the most, though not nearly as drastically.
+largest \textit{significant} magnitude of effect on the odds (farthest away from 1). While serovar Enteritidis drastically increases the odds of Salmonella isolates being susceptible to tetracycline, a stool isolation source decreases the odds the most, though not nearly as drastically.
 Additionally, the more recent the year, the slightly lower the odds of
-responding with susceptibility to tetracycline. In the E.coli isolates, having a turkey isolation source lowers the odds
-of being susceptible to tetracycline the most, although an isolation
-source of stool or water have similar effects in terms of magnitude and
-direction. Lastly, in the Campylobacter isolates, an isolation source of stool
-greatly increases the odds that the isolate will respond favorably to
-tetracycline.
+responding with susceptibility to tetracycline. In the E.coli isolates, having a turkey isolation source lowers the odds of being susceptible to tetracycline the most, although an isolation source of stool or water have similar effects in terms of magnitude and direction. Lastly, in the Campylobacter isolates, an isolation source of stool greatly increases the odds that the isolate will respond favorably to tetracycline.
 
 ## 3.5 Recommendation System
 
@@ -1706,7 +1676,7 @@ returns "No susceptibility". We used the test data to illustrate the
 utility of this system. For each isolate that it is fed, the algorithm recommends two antibiotics, one decided on by the source and genetic predictor model for that corresponding species, and the other decided by the source only
 model.
 
-\textbf{Table 4} picked 3 random isolates from each species that were
+\textbf{Table 6} picked three random isolates from each species that were
 fed into the algorithm and displays their recommendation results. From
 this table, we see examples of when the source and genetic models would
 agree, and when they would disagree. We compared the agreement between
@@ -1721,14 +1691,18 @@ of the time.
 ```{r}
 
 
-# code recommendation system
+# code the recommendation system
 
 recommend_source_genetic <- function(new_data, species) {
+#' input new isolates
+#' specify the species of foodborne illness (salmonella, e.coli, or campylobacter)
+#' return final predictions
   
   new_data_temp <- new_data
   
   if (species == "salmonella")
   {
+    #' predict susceptible/resistance in new salmonella isolates
     
     new_data_temp$tet_prob <- predict(rf_model_salm_tet, new_data)$predictions[, '1']
     new_data_temp$tet_prob_source <- predict(rf_model_salm_tet_s, new_data)$predictions[, '1']
@@ -1741,7 +1715,8 @@ recommend_source_genetic <- function(new_data, species) {
   
    
     
-    
+# find the susceptible drug predicted with the highest probability in salmonella
+# prioritize antibiotics in following order: strep, sulf, tet, amp 
   new_data_choose_gs <- new_data_temp %>%
     mutate(genetic_source_pred = 
                
@@ -1761,7 +1736,7 @@ recommend_source_genetic <- function(new_data, species) {
                                 tet_prob >= amp_prob,
                              "Tetracycline",
                                     "Ampicillin")))),
-
+# repeat process for source only models
              source_only_ans =  ifelse(tet_prob_source < 0.5 & strep_prob_source < 0.5 &
                                            sulf_prob_source < 0.5 & amp_prob_source < 0.5,
                                          "No susceptibility",
@@ -1785,7 +1760,7 @@ recommend_source_genetic <- function(new_data, species) {
   
   else if (grepl("coli", tolower(species)))
   {
-    
+   #' predict susceptible/resistance in new ecoli isolates 
     
     new_data_temp$tet_prob <- predict(rf_model_ecoli_tet, new_data)$predictions[, '1']
     new_data_temp$tet_prob_source <- predict(rf_model_ecoli_tet_s, new_data)$predictions[, '1']
@@ -1797,8 +1772,9 @@ recommend_source_genetic <- function(new_data, species) {
     new_data_temp$amp_prob_source <- predict(rf_model_ecoli_amp_s, new_data)$predictions[, '1']
   
    
-    # cip, mero, amp, tet
-    
+   
+# find the susceptible drug predicted with the highest probability in ecoli 
+# prioritize antibiotics in following order: cip, mero, amp, tet   
   new_data_choose_gs <- new_data_temp %>%
     mutate(genetic_source_pred = 
                
@@ -1818,7 +1794,7 @@ recommend_source_genetic <- function(new_data, species) {
                                 amp_prob >= cip_prob,
                              "Ampicillin",
                                     "Tetracycline")))),
-
+# repeat process for source only models
    source_only_ans =          ifelse(tet_prob_source < 0.5 & cip_prob_source < 0.5 &
                                            mero_prob_source < 0.5 & amp_prob_source < 0.5,
                                          "No susceptibility",
@@ -1845,6 +1821,7 @@ recommend_source_genetic <- function(new_data, species) {
     
   else if (grepl("campy", tolower(species)))
   {
+    #' predict susceptible/resistance in new campylobacter isolates
     
     new_data_temp$tet_prob <- predict(rf_model_campy_tet, new_data)$predictions[, '1']
     new_data_temp$tet_prob_source <- predict(rf_model_campy_tet_s, new_data)$predictions[, '1']
@@ -1855,9 +1832,10 @@ recommend_source_genetic <- function(new_data, species) {
     new_data_temp$ery_prob <- predict(rf_model_campy_ery, new_data)$predictions[, '1']
     new_data_temp$ery_prob_source <- predict(rf_model_campy_ery_s, new_data)$predictions[, '1']
   
-   
-    # gent, ery, tet, cip
+
     
+# find the susceptible drug predicted with the highest probability in campylobacter 
+# prioritize antibiotics in following order: gent, ery, tet, cip  
   new_data_choose_gs <- new_data_temp %>%
     mutate(genetic_source_pred = 
                
@@ -1877,7 +1855,7 @@ recommend_source_genetic <- function(new_data, species) {
                                 tet_prob >= cip_prob,
                              "Tetracycline",
                                     "Ciprofloxacin")))),
-
+# repeat process for source only models
              source_only_ans =           ifelse(tet_prob_source < 0.5 & cip_prob_source < 0.5 &
                                            gent_prob_source < 0.5 & ery_prob < 0.5,
                                          "No susceptibility",
@@ -1901,24 +1879,28 @@ recommend_source_genetic <- function(new_data, species) {
   }
   
   else {
+    #' return invalid species for species not salmonella, ecoli, or campylobacter
     return("Invalid Species")
   }
   
+  # collect the final predictions for source+genetic models and source only models
   final_preds <- as.data.frame(cbind(case = 1:nrow(new_data_choose_gs), 
                          genetic_source_pred = new_data_choose_gs$genetic_source_pred,
                          source_only_ans = new_data_choose_gs$source_only_ans))
-    
+
+     
     return(final_preds)
   
 }
 
 
-
+# recommend antibiotics
 salm_final_preds <- recommend_source_genetic(salm_tet_test, "salmonella")
 ecoli_final_preds <- recommend_source_genetic(ecoli_tet_test, "ecoli")
 campy_final_preds <- recommend_source_genetic(campy_tet_test, "campy")
 
-# measure agreement
+
+# measure agreement between source+genetic models and source only models
 salm_agree <- sum(salm_final_preds$genetic_source_pred ==
                     salm_final_preds$source_only_ans)/nrow(salm_final_preds)
 
@@ -1933,7 +1915,7 @@ campy_agree <- sum(campy_final_preds$genetic_source_pred ==
 
 ```{r}
 set.seed(1)
-
+# pick random recommendations to display (3 for each species)
 example_recc <- rbind(salm_final_preds[sample(nrow(salm_final_preds), 3),],
       ecoli_final_preds[sample(nrow(ecoli_final_preds), 3), ],
       campy_final_preds[sample(nrow(campy_final_preds), 3), ])
@@ -1947,11 +1929,11 @@ example_recc <- cbind(species = c(rep("Salmonella enterica", 3),
 
 ```{r tab4}
 
-
+# display recommendation system example
 kable(example_recc,
       col.names =  c("Species", "Case number", "Genetic + Source Prediction",
                      "Source Only Prediction"),
-      caption = "Three randomly selected predictions from each species") %>%
+      caption = "Three randomly selected recommendations from each species") %>%
   kable_styling()
 # code source only recommendation system 
 
@@ -1987,10 +1969,7 @@ reported antibiotic in the overall data. Serovar Enteritidis also had a
 very large effect on the odds of an isolate garnering a susceptible
 response to tetracycline. The inclusion of collection date as a top
 predictor also stirs some signal that antibiotic response is not
-consistent over time, and that perhaps due to prior mistreatment patterns that have occurred involving treating these cases, certain genes have become more resistant to antibiotics that they might have been previously susceptible to. In future work, it may be of
-value to deeply examine patterns of when genes switch from being
-susceptible to resistant, and perhaps be able to predict \textit{when} a gene
-will become resistant to certain antibiotics.
+consistent over time, and that perhaps due to prior mistreatment patterns that have occurred involving treating these cases, certain genes have become more resistant to antibiotics that they might have been previously susceptible to. In future work, it may be of value to deeply examine patterns of when genes switch from being susceptible to resistant, and perhaps be able to predict \textit{when} a gene will become resistant to certain antibiotics.
 
 
 Lastly, in the assessment of our developed recommendation system, we
@@ -2003,7 +1982,7 @@ information for those species, but this should be validated further with
 the use of external data before any solid conclusions can be drawn.
 
 
-# 5. Limitations
+## 4.1 Limitations
 
 There are a few limitations of this study. Firstly, in order to predict
 responses to the antibiotics considered in our model, we considered a
@@ -2015,38 +1994,17 @@ Additionally, we recognize that there are several limitations that our
 data pose to fully exploring our research question. As aforementioned,
 by only retaining records from the NCBI database that have
 non-missingness in drug response, we've limited the isolates and cases
-that we're able to observe as the drug response variable
-(`AST_phenotypes`) is more often than not missing. Additionally, this
-variable is defined by the data submitter, so there could be some error
-or objectivity involved in that process. The NCBI Pathogen Detection
-Help Documentation site notes that these data are typically submitted
-using CLSI or EUCAST guidelines, which change over time. Alternatively,
-drug response classification is decided by an automated instrument which
-may infer cutoffs. This could mean that records submitted using an
-earlier standard/guideline may have different resistance and
+that we're able to observe as the drug response variable is more often than not missing. Additionally, this variable is defined by the data submitter, so there could be some error or objectivity involved in that process. The NCBI Pathogen Detection Help Documentation site notes that these data are typically submitted using CLSI or EUCAST guidelines, which change over time. Alternatively, drug response classification is decided by an automated instrument which may infer cutoffs. This could mean that records submitted using an earlier standard/guideline may have different resistance and
 susceptibility criteria for the same antibiotic compound than it would
-if using a later standard. Even for the same organism and same isolate,
-different tests may yield different results. This may bring some nuance
-into the problem space of what we observe in our data as criteria don't
-seem to be uniform overtime and vary depending on the different
-standards used to define drug response. Additionally, some of the
-variables that we observe only have information for Salmonella isolates.
-These variables are antigen formula and serovar. And so, these
-variables were only helpful to refine our analyses for Salmonella but
-were not able to contribute to the other two bacteria of interest. This
-approach is also taking a strong assumption that if an isolate is
-susceptible or resistant to an antibiotic, then that would be recorded in
-the data, which reasonably, doesn't always hold true. Additionally, we
-note that genomic responses to antibiotics are more than likely to
-change over time as bacteria start to learn more about the antibiotics
-that are used to treat them, and in response may eventually build a
-resistance to them. This problem space surrounding treatment is ongoing
+if using a later standard. This may bring some nuance into the problem space of what we observe in our data. Additionally, the antigen formula and serovar
+variables only had information for Salmonella isolates. And so, these
+variables were only helpful to refine our analyses for Salmonella. Additionally, we note that genomic responses to antibiotics are more than likely to change over time as bacteria start to learn more about the antibiotics that are used to treat them, and in response may eventually build a resistance to them. This problem space surrounding treatment is ongoing
 and constantly in flux due to this. Thus, we realize that what is
 represented in our data now may or may not be a good measure of what
 could be represented in data like this in future years.
 
 
-# 6. Conclusion
+## 4.2 Conclusion
 
 In the absence of traditional clinical-based procedures, we can turn to
 methods in machine learning to help prevent foodborne illnesses and
